@@ -49,7 +49,7 @@ export default function EditProdukModal({ isOpen, onClose, onUpdated, editingPro
       formData.append("gambar", gambarFile, "produk.png");
     }
 
-    const res = await fetch(`http://localhost:3000/api/produk/${editingProduk.id}`, {
+    const res = await fetch(`https://backend-remen-admin.vercel.app/api/produk/${editingProduk.id}`, {
       method: "PUT",
       body: formData,
       credentials: "include", 
@@ -61,7 +61,7 @@ export default function EditProdukModal({ isOpen, onClose, onUpdated, editingPro
     }
 
     const data = await res.json();
-    onUpdated(data); // callback agar data di Menu.jsx terupdate
+    onUpdated(data);
     onClose();
   } catch (err) {
     setError(err.message);

@@ -37,7 +37,7 @@ export default function ModalAddProduk({ isOpen, onClose, onCreated }) {
       formData.append("deskripsi", form.deskripsi);
       formData.append("gambar", gambar, "produk.png");
 
-      const res = await fetch("http://localhost:3000/api/produk", {
+      const res = await fetch("https://backend-remen-admin.vercel.app/api/produk", {
         method: "POST",
         body: formData,
         credentials: "include",

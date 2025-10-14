@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch } from "./../server";
 
 export default function TentangKami() {
-  const primary = "#622F10"; // warna dominan
-  const hoverPrimary = "#8B4A23"; // hover
+  const primary = "#622F10"; 
+  const hoverPrimary = "#8B4A23"; 
   const [form, setForm] = useState({
     paragraf1: "",
     paragraf2: "",
