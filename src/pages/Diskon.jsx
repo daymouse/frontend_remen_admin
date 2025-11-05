@@ -10,14 +10,14 @@ import {
   CheckCircle,
   Eye,
 } from "lucide-react";
-import DiskonForm from "../components/DiskonForm.jsx";
+import DiskonFormModal from "../components/DiskonForm.jsx";
 import { apiFetch } from "./../server.jsx";
 
 export default function Diskon() {
   const [diskons, setDiskons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingDiskon, setEditingDiskon] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [produkTanpaDiskon, setProdukTanpaDiskon] = useState([]);
   const [selectedProduk, setSelectedProduk] = useState([]);
   const [applyDiskonId, setApplyDiskonId] = useState(null);
@@ -25,20 +25,18 @@ export default function Diskon() {
   const [produkDiskon, setProdukDiskon] = useState([]);
   const [loadingProdukDiskon, setLoadingProdukDiskon] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loadingApply, setLoadingApply] = useState(false);
+
   const filteredProduk = produkTanpaDiskon.filter((p) =>
     p.nama_produk.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const [searchTerm, setSearchTerm] = useState("");
   const filteredProdukDiskon = produkDiskon.filter((p) =>
     p.nama_produk.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  const [loadingApply, setLoadingApply] = useState(false);
 
-
-
-  const primary = "#622F10"; // warna dominan
-  const hoverPrimary = "#8B4A23"; // hover senada
-  const bgLight = "#F7EFEA"; // background lembut
+  const primary = "#622F10";
+  const hoverPrimary = "#8B4A23";
 
   // === Fetch Diskon ===
   const fetchDiskons = async () => {
@@ -83,6 +81,7 @@ export default function Diskon() {
     fetchDiskons();
   }, []);
 
+  // === Hapus Diskon ===
   const handleDelete = async (id) => {
     if (!confirm("Yakin ingin menghapus diskon ini?")) return;
     try {
@@ -93,6 +92,7 @@ export default function Diskon() {
     }
   };
 
+  // === Simpan atau Update Diskon ===
   const handleSubmit = async (form) => {
     try {
       if (editingDiskon) {
@@ -106,7 +106,7 @@ export default function Diskon() {
           body: JSON.stringify(form),
         });
       }
-      setShowForm(false);
+      setIsModalOpen(false);
       setEditingDiskon(null);
       fetchDiskons();
     } catch (err) {
@@ -114,48 +114,7 @@ export default function Diskon() {
     }
   };
 
-  const handleOpenApplyDiskon = async (diskonId) => {
-    setApplyDiskonId(diskonId);
-    setSelectedProduk([]);
-    await fetchProdukTanpaDiskon();
-  };
-
-  const handleCheckboxChange = (id) => {
-    setSelectedProduk((prev) =>
-      prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]
-    );
-  };
-
-  const handleApplyDiskon = async () => {
-    if (selectedProduk.length === 0) {
-      alert("Pilih minimal 1 produk!");
-      return;
-    }
-
-    try {
-      setLoadingApply(true); // mulai loading
-      await apiFetch("/api/diskon/produk", {
-        method: "PATCH",
-        body: JSON.stringify({
-          diskon_id: applyDiskonId,
-          produk_id: selectedProduk,
-        }),
-      });
-
-      
-      await fetchProdukByDiskon(applyDiskonId); 
-      alert("Diskon berhasil diterapkan!");
-      setApplyDiskonId(null);
-      setSelectedProduk([]);
-    } catch (err) {
-      console.error(err.message);
-      alert("Gagal menerapkan diskon");
-    } finally {
-      setLoadingApply(false); 
-    }
-  };
-
-
+  // === Detail Produk dengan Diskon ===
   const handleOpenDetail = async (diskon) => {
     setDetailDiskon(diskon);
     setProdukDiskon([]);
@@ -167,8 +126,51 @@ export default function Diskon() {
     setProdukDiskon([]);
   };
 
+  // === Buka modal terapkan diskon ===
+  const handleOpenApplyDiskon = async (diskonId) => {
+    setApplyDiskonId(diskonId);
+    setSelectedProduk([]);
+    await fetchProdukTanpaDiskon();
+  };
+
+  // === Checkbox produk ===
+  const handleCheckboxChange = (id) => {
+    setSelectedProduk((prev) =>
+      prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]
+    );
+  };
+
+  // === Terapkan diskon ke produk ===
+  const handleApplyDiskon = async () => {
+    if (selectedProduk.length === 0) {
+      alert("Pilih minimal 1 produk!");
+      return;
+    }
+
+    try {
+      setLoadingApply(true);
+      await apiFetch("/api/diskon/produk", {
+        method: "PATCH",
+        body: JSON.stringify({
+          diskon_id: applyDiskonId,
+          produk_id: selectedProduk,
+        }),
+      });
+
+      await fetchProdukByDiskon(applyDiskonId);
+      alert("Diskon berhasil diterapkan!");
+      setApplyDiskonId(null);
+      setSelectedProduk([]);
+    } catch (err) {
+      console.error(err.message);
+      alert("Gagal menerapkan diskon");
+    } finally {
+      setLoadingApply(false);
+    }
+  };
+
   return (
-    <div className="p-4 sm:p-6 md:p-8 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen">
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: primary }}>
@@ -176,8 +178,8 @@ export default function Diskon() {
         </h1>
         <button
           onClick={() => {
-            setShowForm(true);
             setEditingDiskon(null);
+            setIsModalOpen(true);
           }}
           className="flex items-center gap-2 px-4 py-2 rounded-xl shadow-md text-white transition transform hover:scale-105"
           style={{ backgroundColor: primary }}
@@ -187,38 +189,18 @@ export default function Diskon() {
         </button>
       </div>
 
-      {/* FORM */}
-      <AnimatePresence>
-        {showForm && (
-          <motion.div
-            key="formOverlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          >
-            <motion.div
-              key="diskonForm"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.25 }}
-              className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 w-full max-w-md shadow-lg"
-            >
-              <DiskonForm
-                diskon={editingDiskon}
-                onSubmit={handleSubmit}
-                onCancel={() => {
-                  setShowForm(false);
-                  setEditingDiskon(null);
-                }}
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* === MODAL FORM === */}
+      <DiskonFormModal
+        diskon={editingDiskon}
+        onSubmit={handleSubmit}
+        onCancel={() => {
+          setIsModalOpen(false);
+          setEditingDiskon(null);
+        }}
+        isOpen={isModalOpen}
+      />
 
-      {/* LIST DISKON */}
+      {/* === LIST DISKON === */}
       {loading ? (
         <p className="text-gray-500 italic">Memuat data...</p>
       ) : diskons.length === 0 ? (
@@ -270,7 +252,7 @@ export default function Diskon() {
                 <button
                   onClick={() => {
                     setEditingDiskon(d);
-                    setShowForm(true);
+                    setIsModalOpen(true);
                   }}
                   className="flex items-center gap-1 bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded-lg transition shadow"
                 >
@@ -288,119 +270,114 @@ export default function Diskon() {
         </div>
       )}
 
-      {/* MODAL PRODUK DISKON & TERAPKAN */}
-        <AnimatePresence>
-          {detailDiskon && (
+      {/* === MODAL DETAIL DISKON & TERAPKAN === */}
+      <AnimatePresence>
+        {detailDiskon && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 p-2"
+          >
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 p-2"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="bg-white rounded-2xl shadow-xl w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden"
             >
-              <motion.div
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0.9 }}
-                className="bg-white rounded-2xl shadow-xl w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden"
-              >
-                {/* Header */}
-                <div className="flex justify-between items-center px-6 py-4 border-b">
-                  <h2 className="text-xl font-semibold text-gray-800">
-                    Produk dengan Diskon: {detailDiskon.nama_diskon}
-                  </h2>
+              <div className="flex justify-between items-center px-6 py-4 border-b">
+                <h2 className="text-xl font-semibold text-gray-800">
+                  Produk dengan Diskon: {detailDiskon.nama_diskon}
+                </h2>
+                <button
+                  onClick={handleCloseDetail}
+                  className="flex items-center gap-1 text-gray-600 hover:text-red-500 transition"
+                >
+                  <XCircle size={22} /> Tutup
+                </button>
+              </div>
+
+              <div className="px-6 py-4 border-b">
+                <input
+                  type="text"
+                  placeholder="Cari produk..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#622F10]/50 shadow-sm transition"
+                />
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="my-2">
                   <button
-                    onClick={handleCloseDetail}
-                    className="flex items-center gap-1 text-gray-600 hover:text-red-500 transition"
+                    onClick={() => handleOpenApplyDiskon(detailDiskon.id)}
+                    className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl shadow text-white w-full"
+                    style={{ backgroundColor: primary }}
                   >
-                    <XCircle size={22} /> Tutup
+                    <CheckCircle size={18} /> Terapkan ke Produk
                   </button>
                 </div>
 
-                {/* Search Input */}
-                <div className="px-6 py-4 border-b">
-                  <input
-                    type="text"
-                    placeholder="Cari produk..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#622F10]/50 shadow-sm transition"
-                  />
-                </div>
+                {loadingProdukDiskon ? (
+                  <p className="text-gray-500 italic">Memuat produk...</p>
+                ) : filteredProdukDiskon.length === 0 ? (
+                  <p className="text-gray-500 italic">
+                    Belum ada produk yang memakai diskon ini.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {filteredProdukDiskon.map((p) => (
+                      <div
+                        key={p.id}
+                        className="bg-white border rounded-2xl shadow-sm p-3 flex flex-col hover:shadow-md transition"
+                      >
+                        <img
+                          src={p.gambar || "/no-image.png"}
+                          alt={p.nama_produk}
+                          className="h-28 sm:h-32 object-cover rounded-md mb-2"
+                        />
+                        <h4 className="font-semibold text-gray-800 text-sm mb-1">
+                          {p.nama_produk}
+                        </h4>
+                        <p className="text-xs text-gray-500 line-through">
+                          Rp{p.harga.toLocaleString("id-ID")}
+                        </p>
+                        <p className="text-green-600 font-semibold">
+                          Rp{p.harga_akhir?.toLocaleString("id-ID") || "—"}
+                        </p>
 
-                {/* Content Produk */}
-                <div className="flex-1 overflow-y-auto p-6">
-                  <div className="my-2">
-                    <button
-                      onClick={() => handleOpenApplyDiskon(detailDiskon.id)}
-                      className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl shadow text-white w-full"
-                      style={{ backgroundColor: primary }}
-                    >
-                      <CheckCircle size={18} /> Terapkan ke Produk
-                    </button>
-                  </div>
-
-                  {loadingProdukDiskon ? (
-                    <p className="text-gray-500 italic">Memuat produk...</p>
-                  ) : filteredProdukDiskon.length === 0 ? (
-                    <p className="text-gray-500 italic">
-                      Belum ada produk yang memakai diskon ini.
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {filteredProdukDiskon.map((p) => (
-                        <div
-                          key={p.id}
-                          className="bg-white border rounded-2xl shadow-sm p-3 flex flex-col hover:shadow-md transition"
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`Hapus diskon dari ${p.nama_produk}?`)) return;
+                            try {
+                              await apiFetch("/api/diskon/produk/remove", {
+                                method: "PATCH",
+                                body: JSON.stringify({
+                                  diskon_id: detailDiskon.id,
+                                  produk_id: p.id,
+                                }),
+                              });
+                              fetchProdukByDiskon(detailDiskon.id);
+                            } catch (err) {
+                              console.error(err.message);
+                              alert("Gagal menghapus diskon dari produk");
+                            }
+                          }}
+                          className="mt-2 bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1 rounded-xl transition"
                         >
-                          <img
-                            src={p.gambar || "/no-image.png"}
-                            alt={p.nama_produk}
-                            className="h-28 sm:h-32 object-cover rounded-md mb-2"
-                          />
-                          <h4 className="font-semibold text-gray-800 text-sm mb-1">
-                            {p.nama_produk}
-                          </h4>
-                          <p className="text-xs text-gray-500 line-through">
-                            Rp{p.harga.toLocaleString("id-ID")}
-                          </p>
-                          <p className="text-green-600 font-semibold">
-                            Rp{p.harga_akhir?.toLocaleString("id-ID") || "—"}
-                          </p>
-
-                          {/* Tombol Hapus Diskon */}
-                          <button
-                            onClick={async () => {
-                              if (!confirm(`Hapus diskon dari ${p.nama_produk}?`)) return;
-                              try {
-                                await apiFetch("/api/diskon/produk/remove", {
-                                  method: "PATCH",
-                                  body: JSON.stringify({
-                                    diskon_id: detailDiskon.id,
-                                    produk_id: p.id,
-                                  }),
-                                });
-                                fetchProdukByDiskon(detailDiskon.id);
-                              } catch (err) {
-                                console.error(err.message);
-                                alert("Gagal menghapus diskon dari produk");
-                              }
-                            }}
-                            className="mt-2 bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1 rounded-xl transition"
-                          >
-                            Hapus Diskon
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
+                          Hapus Diskon
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </motion.div>
-          )}
-        </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-
-      {/* MODAL TERAPKAN DISKON */}
+      {/* === MODAL TERAPKAN DISKON === */}
       <AnimatePresence>
         {applyDiskonId && (
           <motion.div
@@ -419,7 +396,6 @@ export default function Diskon() {
                 Terapkan Diskon ke Produk
               </h2>
 
-              {/* Search */}
               <div className="mb-3">
                 <input
                   type="text"
@@ -430,7 +406,6 @@ export default function Diskon() {
                 />
               </div>
 
-              {/* Checkbox Semua */}
               <div className="flex items-center mb-3 border-b pb-2">
                 <input
                   type="checkbox"
@@ -452,10 +427,11 @@ export default function Diskon() {
                 </label>
               </div>
 
-              {/* List Produk */}
               <div className="max-h-72 overflow-y-auto border rounded-md p-3 bg-gray-50">
                 {filteredProduk.length === 0 ? (
-                  <p className="text-gray-500 italic">Tidak ada produk yang cocok.</p>
+                  <p className="text-gray-500 italic">
+                    Tidak ada produk yang cocok.
+                  </p>
                 ) : (
                   filteredProduk.map((p) => (
                     <label
@@ -488,7 +464,6 @@ export default function Diskon() {
                 )}
               </div>
 
-              {/* Tombol */}
               <div className="flex justify-end gap-2 mt-4">
                 <button
                   onClick={() => setApplyDiskonId(null)}
@@ -512,7 +487,6 @@ export default function Diskon() {
           </motion.div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }

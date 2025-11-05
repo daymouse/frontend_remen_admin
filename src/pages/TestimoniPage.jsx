@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiFetch } from "./../server"; 
+import { apiFetch } from "./../server";
 import ModalAddTestimoni from "./../components/ModalAddTestimoni";
 import ModalEditTestimoni from "./../components/ModalEditTestimoni";
 
@@ -86,23 +86,21 @@ export default function TestimoniPage() {
       </div>
 
       {/* MODALS */}
-      {isAddOpen && (
-        <ModalAddTestimoni
-          onClose={() => setIsAddOpen(false)}
-          onAdded={fetchData}
-        />
-      )}
+      <ModalAddTestimoni
+        isOpen={isAddOpen}
+        onClose={() => setIsAddOpen(false)}
+        onAdded={fetchData}
+      />
 
-      {isEditOpen && selected && (
-        <ModalEditTestimoni
-          data={selected}
-          onClose={() => {
-            setIsEditOpen(false);
-            setSelected(null);
-          }}
-          onUpdated={fetchData}
-        />
-      )}
+      <ModalEditTestimoni
+        isOpen={isEditOpen}
+        data={selected}
+        onClose={() => {
+          setIsEditOpen(false);
+          setSelected(null);
+        }}
+        onUpdated={fetchData}
+      />
     </div>
   );
 }

@@ -4,7 +4,6 @@ import Menu from "./Menu";
 import Diskon from "./Diskon";
 import Tentang from "./TentangKami";
 import Sosial from "./MediaSosial";
-import Home from "./Home";
 import IklanBanner from "./IklanBaner";
 import Testimoni from "./TestimoniPage";
 import Profil from "./ProfilAdminPage";
