@@ -7,6 +7,8 @@ import Sosial from "./MediaSosial";
 import IklanBanner from "./IklanBaner";
 import Testimoni from "./TestimoniPage";
 import Profil from "./ProfilAdminPage";
+import ManajementUser from "./ManajementUser";
+import LaporanPesanan from "./LaporanPesanan";
 // halaman isi Dashboard
 
 
@@ -27,6 +29,8 @@ export default function Dashboard() {
           <Route path="iklan" element={<IklanBanner />} />
           <Route path="testimoni" element={<Testimoni />} />
           <Route path="profil" element={<Profil />} />
+          <Route path="manajement-user" element={<ManajementUser />} />
+          <Route path="laporan-pesanan" element={<LaporanPesanan />} />
         </Routes>
       </main>
     </div>
