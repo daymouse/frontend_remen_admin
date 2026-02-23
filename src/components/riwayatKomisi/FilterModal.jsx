@@ -4,7 +4,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import {
   Popover, PopoverContent, PopoverTrigger
 } from "@/components/ui/popover";
@@ -13,50 +12,64 @@ import {
 } from "@/components/ui/command";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 
-export default function FilterModal({ open, onClose, onApply, ranges }) {
+export default function FilterModal({ open, onClose, onApply }) {
   const [namaList, setNamaList] = useState([]);
   const [kelasList, setKelasList] = useState([]);
 
-  const [nama, setNama] = useState("");
+  const [fullname, setFullname] = useState("");
   const [kelas, setKelas] = useState("");
-  const [bonus, setBonus] = useState([0, 0]);
-  const [komisi, setkomisi] = useState([0, 0]);
-  const [bayar, setBayar] = useState([0, 0]);
+
+  const [komisiMin, setKomisiMin] = useState("");
+  const [komisiMax, setKomisiMax] = useState("");
+
+  const [bonusMin, setBonusMin] = useState("");
+  const [bonusMax, setBonusMax] = useState("");
+
+  const [bayarMin, setBayarMin] = useState("");
+  const [bayarMax, setBayarMax] = useState("");
 
   useEffect(() => {
     if (!open) return;
-    if (namaList.length && kelasList.length) return;
 
     apiFetch("/api/fullname").then(r => setNamaList(r.data || []));
     apiFetch("/api/kelas").then(r => setKelasList(r.data || []));
   }, [open]);
 
-
-  useEffect(() => {
-    if (!ranges) return;
-    setkomisi([ranges.total_komisi.min, ranges.total_komisi.max]);
-    setBonus([ranges.total_bonus.min, ranges.total_bonus.max]);
-    setBayar([ranges.total_bayar.min, ranges.total_bayar.max]);
-  }, [ranges]);
-
   const handleApply = () => {
-    onApply({ nama, kelas, bonus, komisi, bayar });
+    onApply({
+      fullname: fullname || undefined,
+      kelas: kelas || undefined,
+
+      komisi_min: komisiMin || undefined,
+      komisi_max: komisiMax || undefined,
+
+      bonus_min: bonusMin || undefined,
+      bonus_max: bonusMax || undefined,
+
+      bayar_min: bayarMin || undefined,
+      bayar_max: bayarMax || undefined,
+    });
+
     onClose();
   };
 
   const handleReset = () => {
-    setNama("");
+    setFullname("");
     setKelas("");
-    if (!ranges) return;
-    setkomisi([ranges.total_komisi.min, ranges.total_komisi.max]);
-    setBonus([ranges.total_bonus.min, ranges.total_bonus.max]);
-    setBayar([ranges.total_bayar.min, ranges.total_bayar.max]);
+
+    setKomisiMin("");
+    setKomisiMax("");
+    setBonusMin("");
+    setBonusMax("");
+    setBayarMin("");
+    setBayarMax("");
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-xl w-full max-h-[90vh] overflow-y-auto pb-24">
         <DialogHeader>
           <DialogTitle>Filter Komisi Petugas</DialogTitle>
         </DialogHeader>
@@ -65,8 +78,8 @@ export default function FilterModal({ open, onClose, onApply, ranges }) {
 
           <SearchableDropdown
             label="Nama Petugas"
-            value={nama}
-            setValue={setNama}
+            value={fullname}
+            setValue={setFullname}
             list={namaList.map(n => n.fullname)}
           />
 
@@ -77,9 +90,32 @@ export default function FilterModal({ open, onClose, onApply, ranges }) {
             list={kelasList.map(k => k.kelas)}
           />
 
-            <RangeSlider label="Total Komisi" value={komisi} setValue={setkomisi} min={ranges?.total_komisi.min} max={ranges?.total_komisi.max} />
-            <RangeSlider label="Total Bonus" value={bonus} setValue={setBonus} min={ranges?.total_bonus.min} max={ranges?.total_bonus.max} />
-            <RangeSlider label="Total Bayar" value={bayar} setValue={setBayar} min={ranges?.total_bayar.min} max={ranges?.total_bayar.max} />
+          <RangeInput
+            label="Total Komisi"
+            minValue={komisiMin}
+            maxValue={komisiMax}
+            setMin={setKomisiMin}
+            setMax={setKomisiMax}
+            isCurrency
+          />
+
+          <RangeInput
+            label="Total Bonus"
+            minValue={bonusMin}
+            maxValue={bonusMax}
+            setMin={setBonusMin}
+            setMax={setBonusMax}
+            isCurrency
+          />
+
+          <RangeInput
+            label="Total Bayar"
+            minValue={bayarMin}
+            maxValue={bayarMax}
+            setMin={setBayarMin}
+            setMax={setBayarMax}
+            isCurrency
+          />
 
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={handleReset}>Reset</Button>
@@ -139,23 +175,130 @@ function SearchableDropdown({ label, value, setValue, list }) {
     </div>
   );
 }
+function RangeInput({
+  label,
+  minValue,
+  maxValue,
+  setMin,
+  setMax,
+  isCurrency = false,
+}) {
 
-function RangeSlider({ label, value, setValue, min, max }) {
-  if (min === undefined || max === undefined) return null;
+  const [error, setError] = useState("");
+  const formatRupiah = (value) => {
+    if (!value) return "";
+    const number = value.toString().replace(/\D/g, "");
+    return new Intl.NumberFormat("id-ID").format(number);
+  };
 
+const handleMinChange = (e) => {
+  const raw = e.target.value.replace(/\D/g, "");
+
+  // set min
+  setMin(raw);
+
+  // kalau max kosong → samakan
+  if (!maxValue) {
+    setMax(raw);
+  }
+
+  // kalau max lebih kecil dari min → samakan
+  if (maxValue && Number(raw) > Number(maxValue)) {
+    setMax(raw);
+  }
+};
+
+const handleMaxChange = (e) => {
+  const raw = e.target.value.replace(/\D/g, "");
+
+  // Izinkan kosong sementara (supaya bisa edit)
+  setMax(raw);
+
+  if (raw === "") {
+    setError("");
+    return;
+  }
+
+  if (minValue && Number(raw) < Number(minValue)) {
+    setError("Max tidak boleh lebih kecil dari Min");
+  } else {
+    setError("");
+  }
+};
+const handleMaxBlur = () => {
+  // Kalau kosong → samakan dengan min
+  if (!maxValue && minValue) {
+    setMax(minValue);
+    setError("");
+    return;
+  }
+
+  // Kalau lebih kecil dari min → paksa samakan min
+  if (minValue && Number(maxValue) < Number(minValue)) {
+    setMax(minValue);
+    setError("");
+  }
+};
   return (
-    <div>
-      <div className="flex justify-between text-sm mb-1">
-        <span className="font-medium">{label}</span>
-        <span className="text-muted-foreground">{value[0]} — {value[1]}</span>
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+      
+      {/* Label */}
+      <div className="w-full sm:w-44">
+        <label className="text-sm sm:text-base font-medium">
+          {label}
+        </label>
+        
       </div>
-      <Slider
-        min={min}
-        max={max}
-        step={1}
-        value={value}
-        onValueChange={setValue}
-      />
+
+    <div className="flex-1 flex flex-col gap-2">
+        {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+        <div className="flex flex-row sm:flex-row gap-3 w-full">
+          
+          {/* MIN */}
+          <div className="flex-1 space-y-1">
+            <span className="text-xs text-muted-foreground">Min</span>
+            <div className="relative">
+              {isCurrency && (
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  Rp
+                </span>
+              )}
+              <Input
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                value={isCurrency ? formatRupiah(minValue) : minValue}
+                onChange={handleMinChange}
+                className={`h-9 sm:h-10 text-sm ${
+                  isCurrency ? "pl-9" : ""
+                }`}
+              />
+            </div>
+          </div>
+
+          {/* MAX */}
+          <div className="flex-1 space-y-1">
+            <span className="text-xs text-muted-foreground">Max</span>
+            <div className="relative">
+              {isCurrency && (
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  Rp
+                </span>
+              )}
+              <Input
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                value={isCurrency ? formatRupiah(maxValue) : maxValue}
+                onChange={handleMaxChange}
+                onBlur={handleMaxBlur}
+                className={`h-9 sm:h-10 text-sm ${isCurrency ? "pl-9" : ""}`}
+              />
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 }

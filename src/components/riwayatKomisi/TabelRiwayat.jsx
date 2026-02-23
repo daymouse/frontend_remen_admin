@@ -8,11 +8,12 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-} from "@/components/ui/dropdown-menu"
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { useMemo, useState } from "react"
 
@@ -24,40 +25,47 @@ function formatRupiah(value) {
 export default function KomisiRiwayatTable({
   data,
   visibleCols,
-  setVisibleCols,
-  allColumns,
+  page,
+  setPage,
+  pageSize,
+  setPageSize,
+  pagination,
   printAreaRef,
+  search,
+  setSearch,
 }) {
 
-
-  const [search, setSearch] = useState("")
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-
-  const filteredData = useMemo(() => {
-    return data.filter((item) =>
-      item.nama?.toLowerCase().includes(search.toLowerCase())
-    )
-  }, [data, search])
-  const paginatedData = filteredData.slice(
-    (page - 1) * pageSize,
-    page * pageSize
-  )
-  
   const totalBayar = useMemo(() => {
-    return paginatedData.reduce(
-      (sum, item) => sum + Number(item.total_bayar || 0),
-      0
-    )
-  }, [paginatedData])
-
+  return data.reduce(
+    (sum, item) => sum + Number(item.total_bayar || 0),
+    0
+  )
+}, [data])
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border overflow-auto"  id="printArea" ref={printAreaRef}>
+
+      {/* Top Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <Input
+          placeholder="Cari nama atau kelas..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value)
+            setPage(1)
+          }}
+          className="w-full sm:max-w-sm bg-background"
+        />
+      </div>
+
+      {/* Table */}
+      <div
+        className="rounded-lg border bg-background overflow-auto"
+        id="printArea"
+        ref={printAreaRef}
+      >
         <Table>
           <TableHeader>
             <TableRow>
-
               {visibleCols.includes("nama") && (
                 <TableHead>Nama</TableHead>
               )}
@@ -65,9 +73,7 @@ export default function KomisiRiwayatTable({
                 <TableHead>Kelas</TableHead>
               )}
               {visibleCols.includes("komisi") && (
-                <TableHead>
-                  Komisi
-                </TableHead>
+                <TableHead>Komisi</TableHead>
               )}
               {visibleCols.includes("bonus") && (
                 <TableHead>Bonus</TableHead>
@@ -79,9 +85,8 @@ export default function KomisiRiwayatTable({
           </TableHeader>
 
           <TableBody>
-            {paginatedData.map((row) => (
+            {data.map((row) => (
               <TableRow key={row.id_petugas}>
-
                 {visibleCols.includes("nama") && (
                   <TableCell>{row.nama}</TableCell>
                 )}
@@ -105,11 +110,14 @@ export default function KomisiRiwayatTable({
                 )}
               </TableRow>
             ))}
-            {paginatedData.length > 0 && (
+
+            {data.length > 0 && (
               <TableRow className="font-semibold bg-gray-50">
-                <TableCell colSpan={
-                  visibleCols.filter((c) => c !== "bayar").length
-                }>
+                <TableCell
+                  colSpan={
+                    visibleCols.filter((c) => c !== "bayar").length
+                  }
+                >
                   Total
                 </TableCell>
 
@@ -121,8 +129,7 @@ export default function KomisiRiwayatTable({
               </TableRow>
             )}
 
-
-            {paginatedData.length === 0 && (
+            {data.length === 0 && (
               <TableRow>
                 <TableCell
                   colSpan={10}
@@ -135,25 +142,69 @@ export default function KomisiRiwayatTable({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between text-sm">
-        <span>
-          {paginatedData.length} dari {filteredData.length} data
-        </span>
+      <div className="flex flex-col sm:items-center sm:justify-between gap-4 text-sm">
+        <div className="flex items-center gap-2 justify-between w-full">
+          <div className="flex items-center gap-2">
+            <Select
+              value={String(pageSize ?? 10)}
+              onValueChange={(val) => {
+                setPageSize(Number(val))
+                setPage(1)
+              }}
+            >
+              <SelectTrigger className="w-20 bg-white border border-gray-300">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="30">30</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className="flex items-center gap-4">
-          <select
-            className="border rounded px-2 py-1"
-            value={pageSize}
-            onChange={(e) => {
-              setPageSize(Number(e.target.value))
-              setPage(1)
-            }}
-          >
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={30}>30</option>
-            <option value={40}>40</option>
-          </select>
+          {/* Pagination Info + Buttons */}
+          <div className="flex items-center gap-2 sm:ml-auto">
+            <div className="flex gap-2 items-center">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page <= 1}
+                onClick={() => setPage(page - 1)}
+              >
+                Prev
+              </Button>
+
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={
+                  page >= (pagination?.total_page || 1)
+                }
+                onClick={() => setPage(page + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-center items-center border-t pt-2 w-full" >
+            <p className="text-sm text-muted-foreground">
+              Menampilkan{" "}
+              <span className="font-medium text-foreground">
+                {Math.min(
+                  (pagination?.page || 1) * (pagination?.per_page || pageSize),
+                  pagination?.total_data || 0
+                )}
+              </span>{" "}
+              dari{" "}
+              <span className="font-medium text-foreground">
+                {pagination?.total_data || 0}
+              </span>{" "}
+              data
+            </p>
         </div>
       </div>
     </div>

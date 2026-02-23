@@ -273,64 +273,69 @@ const totalBayar = useMemo(() => {
           </TableBody>
         </Table>
       </div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-sm">
-        <div className="flex items-center gap-2">
-
-          <Select
-            value={String(pagination?.per_page ?? pageSize ?? 10)}
-            onValueChange={(val) => {
-              setPageSize(Number(val))
-              setPage(1)
-            }}
-          >
-            <SelectTrigger className="w-20 bg-white border border-gray-300 focus:ring-1 focus:ring-primary">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="20">20</SelectItem>
-              <SelectItem value="30">30</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-              <SelectItem value="100">100</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Right - Pagination */}
-        <div className="flex items-center gap-2 sm:ml-auto">
-          <p className="text-sm text-muted-foreground">
-            Menampilkan{" "}
-            <span className="font-medium text-foreground">
-              {Math.min(
-                (pagination?.page || 1) * (pagination?.per_page || pageSize),
-                pagination?.total_data || 0
-              )}
-            </span>{" "}
-            dari{" "}
-            <span className="font-medium text-foreground">
-              {pagination?.total_data || 0}
-            </span>{" "}
-            data
-          </p>
-          <div className="flex gap-2 items-center">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={page <= 1}
-              onClick={() => setPage(page - 1)}
+      <div className="flex flex-col sm:items-center sm:justify-between gap-4 text-sm">
+        <div className="flex items-center gap-2 justify-between w-full">
+          <div className="flex items-center gap-2">
+            <Select
+              value={String(pageSize ?? 10)}
+              onValueChange={(val) => {
+                setPageSize(Number(val))
+                setPage(1)
+              }}
             >
-              Prev
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={page >= pagination?.total_page}
-              onClick={() => setPage(page + 1)}
-            >
-              Next
-            </Button>
+              <SelectTrigger className="w-20 bg-white border border-gray-300">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="30">30</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
+          {/* Pagination Info + Buttons */}
+          <div className="flex items-center gap-2 sm:ml-auto">
+            <div className="flex gap-2 items-center">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page <= 1}
+                onClick={() => setPage(page - 1)}
+              >
+                Prev
+              </Button>
+
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={
+                  page >= (pagination?.total_page || 1)
+                }
+                onClick={() => setPage(page + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-center items-center border-t pt-2 w-full" >
+            <p className="text-sm text-muted-foreground">
+              Menampilkan{" "}
+              <span className="font-medium text-foreground">
+                {Math.min(
+                  (pagination?.page || 1) * (pagination?.per_page || pageSize),
+                  pagination?.total_data || 0
+                )}
+              </span>{" "}
+              dari{" "}
+              <span className="font-medium text-foreground">
+                {pagination?.total_data || 0}
+              </span>{" "}
+              data
+            </p>
         </div>
       </div>
     </div>
