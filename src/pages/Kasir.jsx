@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { apiFetch } from "./../server";
 import { useNavigate } from "react-router-dom";
+import ButtonOutline from "@/components/kasir/ButtonOutline";
 
 const Kasir = () => {
   const primary = "#622F10";
@@ -21,6 +22,9 @@ const Kasir = () => {
   const [userLoading, setUserLoading] = useState(true);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [currentOrder, setCurrentOrder] = useState(null);
+  const [absenLoading, setAbsenLoading] = useState(false);
+  const [sudahJaga, setSudahJaga] = useState(false);
+
 
   const searchRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -50,6 +54,8 @@ const Kasir = () => {
       });
       
       setUserData(response.user);
+      setSudahJaga(response.user.jaga === true);
+
     } catch (err) {
       console.error("❌ Error fetching user data:", err);
       setError("Gagal memuat data pengguna: " + err.message);
@@ -64,6 +70,38 @@ const Kasir = () => {
       console.log("🏁 User loading finished, userData:", userData);
     }
   };
+  const handleJagaHariIni = async () => {
+    if (sudahJaga) return;
+  
+    try {
+      setAbsenLoading(true);
+  
+      const response = await apiFetch("/api/absensi", {
+        method: "POST",
+      });
+  
+      if (
+        response.status === "checked_in" ||
+        response.status === "already_checked_in"
+      ) {
+        setSudahJaga(true);
+  
+        // update userData biar konsisten
+        setUserData((prev) => ({
+          ...prev,
+          jaga: true,
+          check_in: new Date().toISOString(),
+        }));
+      }
+  
+    } catch (err) {
+      console.error("❌ Gagal absen:", err);
+      alert("Gagal mencatat absensi: " + err.message);
+    } finally {
+      setAbsenLoading(false);
+    }
+  };
+  
 
   // Fetch products from API
   const fetchProducts = async () => {
@@ -313,8 +351,6 @@ const Kasir = () => {
     if (!userData) {
       return "Petugas";
     }
-    
-    // Cek berbagai kemungkinan struktur data
     if (userData.fullname) {
       return userData.fullname;
     } else if (userData.username) {
@@ -360,12 +396,7 @@ const Kasir = () => {
     const userInfo = getUserInfo();
     return (
       <span>
-        Hello, <strong>{userInfo.name}</strong>! 👋
-        {userInfo.kelas && (
-          <span className="text-sm text-gray-500 ml-2">
-            ({userInfo.kelas})
-          </span>
-        )}
+        Hello, <strong>{userInfo.name}</strong>
       </span>
     );
   };
@@ -380,73 +411,79 @@ const Kasir = () => {
             <p className="text-gray-600"></p>
           </div>
         </div>
+        <ButtonOutline
+          onClick={handleJagaHariIni}
+          sudahJaga={sudahJaga}
+          absenLoading={absenLoading}
+          primary={primary}
+        />
 
         {/* Invoice Modal */}
         {showInvoiceModal && currentOrder && (
-  <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-    <div className="bg-white rounded-xl shadow-lg max-w-sm w-full">
-      {/* Header */}
-      <div className="p-6 border-b border-gray-100">
-        <div className="text-center">
-          <h2 className="text-xl font-bold text-gray-800">Remen Coffee</h2>
-          <p className="text-sm text-gray-500 mt-1">Laporan Pesanan Berhasil</p>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="p-6">
-        {/* Order Info */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-3">
-            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <p className="text-sm text-gray-600">Pesanan telah berhasil dilaporkan</p>
-          <p className="text-xs text-gray-500 mt-1">ID: {currentOrder.pesanan_id}</p>
-        </div>
-
-        {/* Items List */}
-        <div className="space-y-3 mb-4">
-          <h3 className="font-semibold text-gray-700 text-sm">Detail Pesanan:</h3>
-          {currentOrder.items.map((item, index) => (
-            <div key={index} className="flex justify-between items-start">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-800">{item.nama_produk}</p>
-                <p className="text-xs text-gray-500">
-                  {item.quantity} × {formatCurrency(item.finalPrice)}
-                </p>
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-lg max-w-sm w-full">
+              {/* Header */}
+              <div className="p-6 border-b border-gray-100">
+                <div className="text-center">
+                  <h2 className="text-xl font-bold text-gray-800">Remen Coffee</h2>
+                  <p className="text-sm text-gray-500 mt-1">Laporan Pesanan Berhasil</p>
+                </div>
               </div>
-              <p className="text-sm font-semibold text-gray-800">
-                {formatCurrency(item.finalPrice * item.quantity)}
-              </p>
+
+              {/* Content */}
+              <div className="p-6">
+                {/* Order Info */}
+                <div className="text-center mb-6">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-3">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="text-sm text-gray-600">Pesanan telah berhasil dilaporkan</p>
+                  <p className="text-xs text-gray-500 mt-1">ID: {currentOrder.pesanan_id}</p>
+                </div>
+
+                {/* Items List */}
+                <div className="space-y-3 mb-4">
+                  <h3 className="font-semibold text-gray-700 text-sm">Detail Pesanan:</h3>
+                  {currentOrder.items.map((item, index) => (
+                    <div key={index} className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-800">{item.nama_produk}</p>
+                        <p className="text-xs text-gray-500">
+                          {item.quantity} × {formatCurrency(item.finalPrice)}
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-800">
+                        {formatCurrency(item.finalPrice * item.quantity)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Total */}
+                <div className="border-t border-gray-100 pt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-gray-800">Total</span>
+                    <span className="text-lg font-bold text-green-600">
+                      {formatCurrency(currentOrder.total)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-gray-100">
+                <button
+                  onClick={closeInvoiceModal}
+                  className="w-full py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+                >
+                  Tutup Laporan
+                </button>
+              </div>
             </div>
-          ))}
-        </div>
-
-        {/* Total */}
-        <div className="border-t border-gray-100 pt-4">
-          <div className="flex justify-between items-center">
-            <span className="font-semibold text-gray-800">Total</span>
-            <span className="text-lg font-bold text-green-600">
-              {formatCurrency(currentOrder.total)}
-            </span>
           </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="p-4 border-t border-gray-100">
-        <button
-          onClick={closeInvoiceModal}
-          className="w-full py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
-        >
-          Tutup Laporan
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+        )}
 
         {/* Main Content */}
         <div className="grid lg:grid-cols-3 gap-6">

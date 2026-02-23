@@ -45,6 +45,7 @@ export default function EditProdukModal({
 
     try {
       const formData = new FormData();
+      formData.append("_method", "PUT");
       formData.append("nama_produk", form.nama_produk);
       formData.append("harga", form.harga);
       formData.append("deskripsi", form.deskripsi);
@@ -55,9 +56,9 @@ export default function EditProdukModal({
       }
 
       const res = await fetch(
-        `https://backend-remen-admin.vercel.app/api/produk/${editingProduk.id}`,
+        `http://localhost:8080/api/produk/${editingProduk.id}`,
         {
-          method: "PUT",
+          method: "POST",
           body: formData,
           credentials: "include",
         }

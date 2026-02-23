@@ -48,7 +48,7 @@ export default function ProfilModal({ isOpen, onClose }) {
     if (!confirm("Apakah yakin ingin logout?")) return;
     try {
       await apiFetch("/api/admin/logout", { method: "POST" });
-      navigate("/", { replace: true });
+      navigate("/login", { replace: true });
     } catch (err) {
       console.error(err.message);
     }

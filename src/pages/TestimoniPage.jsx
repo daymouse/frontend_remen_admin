@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { apiFetch } from "./../server";
 import ModalAddTestimoni from "./../components/ModalAddTestimoni";
 import ModalEditTestimoni from "./../components/ModalEditTestimoni";
+import { useConfirm } from "@/components/providers/AlertConfirmProvider"
 
 export default function TestimoniPage() {
   const [testimoni, setTestimoni] = useState([]);
@@ -9,6 +10,7 @@ export default function TestimoniPage() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selected, setSelected] = useState(null);
+  const { confirm } = useConfirm()
 
   const fetchData = async () => {
     setLoading(true);
@@ -27,7 +29,9 @@ export default function TestimoniPage() {
   }, []);
 
   const handleDelete = async (id) => {
-    if (!confirm("Yakin ingin menghapus testimoni ini?")) return;
+
+    const ok = await confirm("Yakin ingin menghapus testimoni ini?")
+    if (!ok) return
     try {
       await apiFetch(`/api/testimoni/${id}`, { method: "DELETE" });
       await fetchData();

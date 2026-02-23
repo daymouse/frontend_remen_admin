@@ -4,7 +4,7 @@ import { X, LogOut, Edit } from "lucide-react";
 import { apiFetch } from "../server.jsx";
 import { useNavigate } from "react-router-dom";
 
-export default function ProfilAdminPage({ onLogout }) { // Terima prop onLogout
+export default function ProfilAdminPage({ onLogout }) { 
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -35,7 +35,10 @@ export default function ProfilAdminPage({ onLogout }) { // Terima prop onLogout
   }, []);
 
   const handleLogout = async () => {
-    if (!confirm("Apakah yakin ingin logout?")) return;
+    if (!confirm("Apakah yakin ingin logout?")) {
+      window.addEventListener("confirm-ok", handleLogout, { once: true })
+      return
+    }
     
     try {
       // Panggil API logout

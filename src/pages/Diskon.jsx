@@ -27,6 +27,7 @@ export default function Diskon() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [loadingApply, setLoadingApply] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
   const filteredProduk = produkTanpaDiskon.filter((p) =>
     p.nama_produk.toLowerCase().includes(searchQuery.toLowerCase())
@@ -83,7 +84,10 @@ export default function Diskon() {
 
   // === Hapus Diskon ===
   const handleDelete = async (id) => {
-    if (!confirm("Yakin ingin menghapus diskon ini?")) return;
+    if (!confirm("Yakin ingin menghapus diskon ini?")){
+      window.addEventListener("confirm-ok", handleDelete, { once: true })
+      return
+    }
     try {
       await apiFetch(`/api/diskon/${id}`, { method: "DELETE" });
       fetchDiskons();
@@ -106,11 +110,14 @@ export default function Diskon() {
           body: JSON.stringify(form),
         });
       }
+      setFormErrors({});
       setIsModalOpen(false);
       setEditingDiskon(null);
       fetchDiskons();
-    } catch (err) {
-      console.error(err.message);
+    }catch (err) {
+      if (err.response?.status === 400) {
+        setFormErrors(err.response.data.messages || {});
+      }
     }
   };
 
@@ -139,6 +146,15 @@ export default function Diskon() {
       prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]
     );
   };
+  const formatRupiah = (value) => {
+    if (value === null || value === undefined || value === "") return "Rp0";
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(Number(value));
+  };
+
 
   // === Terapkan diskon ke produk ===
   const handleApplyDiskon = async () => {
@@ -189,17 +205,19 @@ export default function Diskon() {
         </button>
       </div>
 
-      {/* === MODAL FORM === */}
       <DiskonFormModal
+        errors={formErrors}
         diskon={editingDiskon}
         onSubmit={handleSubmit}
         onCancel={() => {
           setIsModalOpen(false);
           setEditingDiskon(null);
+
+          // ✅ RESET ERROR DI SINI
+          setFormErrors({});
         }}
         isOpen={isModalOpen}
       />
-
       {/* === LIST DISKON === */}
       {loading ? (
         <p className="text-gray-500 italic">Memuat data...</p>
@@ -233,8 +251,8 @@ export default function Diskon() {
                 <p className="flex items-center gap-1">
                   <Tag size={14} />{" "}
                   {d.tipe_diskon === "persentase"
-                    ? `${d.persentase}%`
-                    : `Rp${d.harga_tetap}`}
+                    ? `${Number(d.persentase)}%`
+                    : formatRupiah(d.harga_tetap)}
                 </p>
                 <p className="flex items-center gap-1 text-xs text-gray-500">
                   <Percent size={12} /> {d.tanggal_mulai} - {d.tanggal_selesai}

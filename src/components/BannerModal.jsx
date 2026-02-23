@@ -36,7 +36,7 @@ const handleUpload = async () => {
     formData.append("image", file);
 
     // 🔹 Kirim ke backend
-    const response = await fetch("https://backend-remen-admin.vercel.app/api/iklan-banner", {
+    const response = await fetch("http://localhost:8080/api/iklan-banner", {
       method: "POST",
       body: formData,
       credentials: "include",

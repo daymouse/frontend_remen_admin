@@ -4,14 +4,16 @@ import { useEffect, useState } from "react";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import PetugasPage from "./pages/Petugas";
+import Register from "./pages/Register";
 import ProtectedRoute from "./ProtectedRoute";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import { AlertConfirmProvider } from "@/components/providers/AlertConfirmProvider";
 import { apiFetch } from "./server";
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Cek user login lewat endpoint /me
   useEffect(() => {
     async function checkAuth() {
       try {
@@ -27,8 +29,6 @@ function App() {
     }
     checkAuth();
   }, []);
-
-  // Fungsi untuk logout yang bisa di-pass ke komponen lain
   const handleGlobalLogout = () => {
     setUser(null);
   };
@@ -38,45 +38,50 @@ function App() {
   }
 
   return (
-    <Routes>
-      {/* LOGIN PAGE - KIRIM setUser SEBAGAI PROP */}
-      <Route
-        path="/login"
-        element={<Login setUser={setUser} />}
-        
-      />
+    <AlertConfirmProvider>
+      <Routes>
+        {/* Login */}
+        <Route path="/login" element={<Login setUser={setUser} />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        {user && Number(user.is_admin) === 1 && (
+          <Route
+            path="/dashboard/*"
+            element={
+              <ProtectedRoute user={user}>
+                <Dashboard user={user} onLogout={handleGlobalLogout} />
+              </ProtectedRoute>
+            }
+          />
+        )}
 
-      {/* ================== ADMIN DASHBOARD ================== */}
-      <Route
-        path="/dashboard/*"
-        element={
-          <ProtectedRoute user={user}>
-            {user?.is_admin ? (
-              <Dashboard user={user} onLogout={handleGlobalLogout} />
+        {user && Number(user.is_admin) === 0 && (
+          <Route
+            path="/petugas/*"
+            element={
+              <ProtectedRoute user={user}>
+                <PetugasPage user={user} onLogout={handleGlobalLogout} />
+              </ProtectedRoute>
+            }
+          />
+        )}
+        <Route
+          path="*"
+          element={
+            user ? (
+              Number(user.is_admin) === 1 ? (
+                <Navigate to="/dashboard" replace />
+              ) : (
+                <Navigate to="/petugas" replace />
+              )
             ) : (
-              <Navigate to="/petugas" replace />
-            )}
-          </ProtectedRoute>
-        }
-      />
-
-      {/* ================== PETUGAS PAGE ================== */}
-      <Route
-        path="/petugas/*"
-        element={
-          <ProtectedRoute user={user}>
-            {!user?.is_admin ? (
-              <PetugasPage user={user} onLogout={handleGlobalLogout} />
-            ) : (
-              <Navigate to="/dashboard" replace />
-            )}
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Default fallback jika route tidak ada */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+      </Routes>
+    </AlertConfirmProvider>
   );
 }
 

@@ -35,16 +35,17 @@ export default function Sidebar() {
   const landingMenus = [
     { name: "Menu", icon: <Utensils size={18} />, path: "/dashboard" },
     { name: "Diskon", icon: <Percent size={18} />, path: "/dashboard/diskon" },
-    { name: "Tentang Kami", icon: <Info size={18} />, path: "/dashboard/tentang" },
+    { name: "Content", icon: <Info size={18} />, path: "/dashboard/content" },
     { name: "Media Sosial", icon: <Share2 size={18} />, path: "/dashboard/sosial" },
     { name: "Iklan Banner", icon: <Image size={18} />, path: "/dashboard/iklan" },
     { name: "Testimoni", icon: <MessageSquare size={18} />, path: "/dashboard/testimoni" },
   ];
 
-  // Menu Management
   const managementMenus = [
     { name: "Manajement User", icon: <User size={18} />, path: "/dashboard/manajement-user" },
+    { name: "Petugas Jaga", icon: <User size={18} />, path: "/dashboard/petugas-jaga" },
     { name: "Laporan Pesanan", icon: <LayoutDashboard size={18} />, path: "/dashboard/laporan-pesanan" },
+    { name: "Komisi", icon: <LayoutDashboard size={18} />, path: "/dashboard/komisi" },
   ];
 
   const toggleSection = (section) => {
@@ -173,23 +174,20 @@ export default function Sidebar() {
 
         {/* Footer / Profile */}
         <div className="px-6 mt-auto border-t pt-4" style={{ borderColor: borderColor }}>
-          <button
-            onClick={() => setShowProfilModal(true)}
-            className="flex items-center gap-3 w-full p-2 rounded-lg transition-colors hover:bg-gray-50 group"
+          <NavLink
+            to='/dashboard/profile'
+            className="flex items-center gap-3 w-full text-gray-700 hover:opacity-90 transition group"
           >
             <div
-              className="p-2 rounded-full flex items-center justify-center transition-colors group-hover:bg-[#8B4A23]"
+              className="p-2 rounded-full flex items-center justify-center group-hover:bg-[#F7EFEA] transition-colors"
               style={{ backgroundColor: bgLight }}
             >
-              <User size={18} color={primary} />
+              <User size={22} color={primary} />
             </div>
-            <div className="text-left flex-1">
-              <p className="font-semibold text-sm" style={{ color: primary }}>
-                Admin
-              </p>
-              <p className="text-xs text-gray-500">Lihat Profil</p>
+            <div className="text-left">
+              <p className="font-medium text-gray-900 text-sm">Profil Saya</p>
             </div>
-          </button>
+          </NavLink>
         </div>
       </aside>
 

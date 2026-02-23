@@ -87,13 +87,16 @@ const ModalProfil = ({ isOpen, onClose }) => {
 
   // Fungsi logout
   const handleLogout = async () => {
-    if (!confirm("Apakah yakin ingin logout?")) return;
+    if (!confirm("Apakah yakin ingin logout?"))  {
+      window.addEventListener("confirm-ok", handleLogout, { once: true })
+      return
+    }
+    
     try {
       await apiFetch("/auth/logout", { method: "POST" });
       navigate("/", { replace: true });
     } catch (err) {
       console.error("Error logging out:", err);
-      // Tetap redirect meskipun ada error
       navigate("/");
     }
   };

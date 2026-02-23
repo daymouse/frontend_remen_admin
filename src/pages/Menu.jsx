@@ -129,7 +129,7 @@ export default function Menu() {
                   {item.id_diskon ? (
                     <div>
                       <p className="text-base sm:text-lg font-bold" style={{ color: primary }}>
-                        Rp {parseFloat(item.harga_akhir).toLocaleString("id-ID")}
+                        Rp {parseFloat(item.harga_final).toLocaleString("id-ID")}
                       </p>
                       <p className="text-sm text-gray-400 line-through">
                         Rp {parseFloat(item.harga).toLocaleString("id-ID")}

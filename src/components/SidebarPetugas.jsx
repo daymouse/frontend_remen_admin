@@ -96,10 +96,9 @@ export default function SidebarUser() {
           })}
         </nav>
 
-        {/* Footer / Profile */}
         <div className="px-6 mt-auto border-t pt-4" style={{ borderColor: bgLight }}>
-          <button
-            onClick={handleProfilClick}
+          <NavLink
+            to='/petugas/profile'
             className="flex items-center gap-3 w-full text-gray-700 hover:opacity-90 transition group"
           >
             <div
@@ -110,9 +109,8 @@ export default function SidebarUser() {
             </div>
             <div className="text-left">
               <p className="font-medium text-gray-900 text-sm">Profil Saya</p>
-              <p className="text-xs text-gray-500">Lihat informasi akun</p>
             </div>
-          </button>
+          </NavLink>
         </div>
       </aside>
 
