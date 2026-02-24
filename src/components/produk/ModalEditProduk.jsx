@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import BaseModal from "./BaseModal";
-import ImageUploader from "./ImageUploader";
+import BaseModal from "@/components/BaseModal";
+import ImageUploader from "@/components/ImageUploader";
 
 export default function EditProdukModal({
   isOpen,

@@ -46,6 +46,7 @@ export default function Sidebar() {
     { name: "Petugas Jaga", icon: <User size={18} />, path: "/dashboard/petugas-jaga" },
     { name: "Laporan Pesanan", icon: <LayoutDashboard size={18} />, path: "/dashboard/laporan-pesanan" },
     { name: "Komisi", icon: <LayoutDashboard size={18} />, path: "/dashboard/komisi" },
+    { name: "Bahan Baku", icon: <LayoutDashboard size={18} />, path: "/dashboard/bahan-baku" },
   ];
 
   const toggleSection = (section) => {

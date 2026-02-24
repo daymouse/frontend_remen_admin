@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
-import Menu from "./Menu";
+import Menu from "@/pages/produk/Menu";
 import Diskon from "./Diskon";
 import Tentang from "./TentangKami";
 import Sosial from "./MediaSosial";
@@ -15,6 +15,7 @@ import Komisi from "@/pages/komisi/Komisi";
 import RiwayatKomisi from "@/pages/komisi/RiwayatKomisi";
 import Profil from "@/pages/ProfileAdmin"
 import AuthResetPassword from "@/pages/AuthResetPassword"
+import BahanBaku from "@/pages/BahanBaku";
 
 export default function Dashboard() {
   return (
@@ -36,6 +37,7 @@ export default function Dashboard() {
           <Route path="riwayat-komisi" element={<RiwayatKomisi />}/>
           <Route path="profile" element={<Profil />}/>
           <Route path="reset-password" element={<AuthResetPassword />} />
+          <Route path="bahan-baku" element={<BahanBaku />} />
         </Routes>
       </main>
     </div>

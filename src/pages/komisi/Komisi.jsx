@@ -202,7 +202,7 @@ useEffect(() => {
     if (!periode?.start) return
 
     try {
-      const response = await apiFetch("/auth/komisi/summaryBulanan", {
+      const response = await apiFetch("/api/komisi/summaryBulanan", {
         method: "POST",
         body: JSON.stringify({
           periode_awal: periode.start,
