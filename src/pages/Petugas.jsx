@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import Sidebar from "../components/SidebarPetugas";
-import Kasir from "./Kasir";
+import Kasir from "@/pages/kasir/Kasir";
 import LaporanPetugas from "./laporanPetugas";
 import Profil from "@/pages/Profil"
 import AuthResetPassword from "@/pages/AuthResetPassword"

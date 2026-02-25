@@ -16,6 +16,7 @@ import RiwayatKomisi from "@/pages/komisi/RiwayatKomisi";
 import Profil from "@/pages/ProfileAdmin"
 import AuthResetPassword from "@/pages/AuthResetPassword"
 import BahanBaku from "@/pages/BahanBaku";
+import DetailProdukPage from "./detailProduk";
 
 export default function Dashboard() {
   return (
@@ -38,6 +39,7 @@ export default function Dashboard() {
           <Route path="profile" element={<Profil />}/>
           <Route path="reset-password" element={<AuthResetPassword />} />
           <Route path="bahan-baku" element={<BahanBaku />} />
+          <Route path="detail-produk/:id" element={<DetailProdukPage />} />
         </Routes>
       </main>
     </div>

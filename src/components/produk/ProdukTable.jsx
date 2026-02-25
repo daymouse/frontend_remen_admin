@@ -18,6 +18,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { MoreVertical, Pencil, Trash2, Star } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function ProdukTable({
   data,
@@ -25,6 +26,7 @@ export default function ProdukTable({
   onDelete,
   onToggleBestSeller,
 }) {
+  const navigate = useNavigate();
   return (
    <div className="rounded-lg border bg-background overflow-auto">
       <Table>
@@ -52,11 +54,14 @@ export default function ProdukTable({
                     </DropdownMenuTrigger>
 
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => navigate(`/dashboard/detail-produk/${item.id}`)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Detail
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onEdit(item)}>
                         <Pencil className="mr-2 h-4 w-4" />
                         Edit
                       </DropdownMenuItem>
-
                       <DropdownMenuItem
                         onClick={() => onDelete(item.id)}
                         className="text-red-500"

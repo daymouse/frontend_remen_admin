@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import { apiFetch } from "./../server";
+import { apiFetch } from "../../server";
 import { useNavigate } from "react-router-dom";
 import ButtonOutline from "@/components/kasir/ButtonOutline";
+import InvoiceModal from "@/components/kasir/InvoiceModal"
+import StockWarningModal from "@/components/kasir/StockWarningModal"
 
 const Kasir = () => {
   const primary = "#622F10";
@@ -24,7 +26,8 @@ const Kasir = () => {
   const [currentOrder, setCurrentOrder] = useState(null);
   const [absenLoading, setAbsenLoading] = useState(false);
   const [sudahJaga, setSudahJaga] = useState(false);
-
+  const [warnings, setWarnings] = useState([])
+  const [showWarningModal, setShowWarningModal] = useState(false)
 
   const searchRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -47,7 +50,6 @@ const Kasir = () => {
   const fetchUserData = async () => {
     try {
       setUserLoading(true);
-      console.log("🔄 Fetching user data...");
       
       const response = await apiFetch("/auth/me-petugas", {
         method: "GET",
@@ -103,7 +105,6 @@ const Kasir = () => {
   };
   
 
-  // Fetch products from API
   const fetchProducts = async () => {
     try {
       setLoading(true);
@@ -232,44 +233,46 @@ const Kasir = () => {
   // Proses lapor pesanan
   const processOrder = async () => {
     if (cart.length === 0) {
-      alert("Keranjang masih kosong!");
-      return;
+      alert("Keranjang masih kosong!")
+      return
     }
 
     try {
-      setSubmitting(true);
-      
+      setSubmitting(true)
+
       const orderData = {
-        items: formatOrderData()
-      };
+        items: formatOrderData(),
+      }
 
       const response = await apiFetch("/api/pesanan", {
         method: "POST",
-        body: JSON.stringify(orderData)
-      });
+        body: JSON.stringify(orderData),
+      })
 
       if (response.message) {
-        // Set current order data untuk invoice
-        setCurrentOrder({
+        const orderPayload = {
           pesanan_id: response.pesanan_id,
           items: [...cart],
           total: total,
-          timestamp: new Date().toLocaleString('id-ID')
-        });
-        
-        // Tampilkan modal invoice
-        setShowInvoiceModal(true);
-        
-        // Reset keranjang
-        resetTransaction();
+          timestamp: new Date().toLocaleString("id-ID"),
+        }
+
+        setCurrentOrder(orderPayload)
+        if (response.warnings && response.warnings.length > 0) {
+          setWarnings(response.warnings)
+          setShowWarningModal(true)
+        } else {
+          setShowInvoiceModal(true)
+        }
+
+        resetTransaction()
       }
     } catch (err) {
-      console.error("Error creating order:", err);
-      alert(`Gagal melaporkan pesanan: ${err.message}`);
+      alert(`Gagal melaporkan pesanan: ${err.message}`)
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
-  };
+  }
 
   // Print invoice
   const printInvoice = () => {
@@ -417,74 +420,6 @@ const Kasir = () => {
           absenLoading={absenLoading}
           primary={primary}
         />
-
-        {/* Invoice Modal */}
-        {showInvoiceModal && currentOrder && (
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-lg max-w-sm w-full">
-              {/* Header */}
-              <div className="p-6 border-b border-gray-100">
-                <div className="text-center">
-                  <h2 className="text-xl font-bold text-gray-800">Remen Coffee</h2>
-                  <p className="text-sm text-gray-500 mt-1">Laporan Pesanan Berhasil</p>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="p-6">
-                {/* Order Info */}
-                <div className="text-center mb-6">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-3">
-                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-gray-600">Pesanan telah berhasil dilaporkan</p>
-                  <p className="text-xs text-gray-500 mt-1">ID: {currentOrder.pesanan_id}</p>
-                </div>
-
-                {/* Items List */}
-                <div className="space-y-3 mb-4">
-                  <h3 className="font-semibold text-gray-700 text-sm">Detail Pesanan:</h3>
-                  {currentOrder.items.map((item, index) => (
-                    <div key={index} className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-800">{item.nama_produk}</p>
-                        <p className="text-xs text-gray-500">
-                          {item.quantity} × {formatCurrency(item.finalPrice)}
-                        </p>
-                      </div>
-                      <p className="text-sm font-semibold text-gray-800">
-                        {formatCurrency(item.finalPrice * item.quantity)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Total */}
-                <div className="border-t border-gray-100 pt-4">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-800">Total</span>
-                    <span className="text-lg font-bold text-green-600">
-                      {formatCurrency(currentOrder.total)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="p-4 border-t border-gray-100">
-                <button
-                  onClick={closeInvoiceModal}
-                  className="w-full py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
-                >
-                  Tutup Laporan
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Main Content */}
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left Column - Products */}
@@ -795,6 +730,21 @@ const Kasir = () => {
           </div>
         </div>
       </div>
+      <StockWarningModal
+        open={showWarningModal}
+        warnings={warnings}
+        onContinue={() => {
+          setShowWarningModal(false)
+          setShowInvoiceModal(true)
+        }}
+      />
+
+      <InvoiceModal
+        open={showInvoiceModal}
+        onClose={() => setShowInvoiceModal(false)}
+        order={currentOrder}
+        formatCurrency={formatCurrency}
+      />
     </div>
   );
 };
