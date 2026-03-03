@@ -1,17 +1,11 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { apiFetch } from "@/server"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem
-} from "@/components/ui/select"
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
+import IngredientDropdown from "@/components/detailProduk/components/IngredientDropdown"
 
 const ResepProdukCard = ({ data, productId }) => {
 
@@ -23,23 +17,36 @@ const ResepProdukCard = ({ data, productId }) => {
   const [deletedIds, setDeletedIds] = useState([])
   const [note, setNote] = useState("")
   const [loading, setLoading] = useState(false)
+  const [search, setSearch] = useState("")
+  const debounceRef = useRef(null)
+  const [packagingList, setPackagingList] = useState([])
+  const [packagings, setPackagings] = useState([])
+  const [deletedPackagingIds, setDeletedPackagingIds] = useState([])
 
-  // fetch dropdown bahan baku
-  useEffect(() => {
-    fetchBahan()
-  }, [])
 
   const fetchBahan = async () => {
-    const res = await apiFetch("/auth/bahan-baku-simpel-list")
+    const res = await apiFetch("/api/bahan-simpel-list")
+
     if (res.success) {
       setIngredientsList(res.data)
     }
   }
+  const fetchPackaging = async () => {
+    const res = await apiFetch(`/api/bahan-simpel-list-packaging`)
 
-  // set initial data ketika edit
+    if (res.success) {
+      setPackagingList(res.data)
+    }
+  }
+  useEffect(() => {
+    fetchBahan()
+    fetchPackaging()
+  }, [])
+
   useEffect(() => {
     if (isEditMode) {
-      setIngredients(data.ingredients)
+      setIngredients(data.ingredients || [])
+      setPackagings(data.packagings || [])
       setNote(data.note || "")
     }
   }, [data])
@@ -50,6 +57,7 @@ const ResepProdukCard = ({ data, productId }) => {
       { ingredient_id: "", quantity: "" }
     ])
   }
+
 
   const removeRow = (index) => {
     const item = ingredients[index]
@@ -68,8 +76,7 @@ const ResepProdukCard = ({ data, productId }) => {
   }
 
   const formatQty = (qty) => {
-    if (!qty) return null
-
+    if (!qty) return ""
     const number = parseFloat(qty)
 
     if (number === 0) return null
@@ -81,28 +88,17 @@ const ResepProdukCard = ({ data, productId }) => {
     setLoading(true)
 
     try {
-
-      if (!isEditMode) {
-        // CREATE
-        await apiFetch("/auth/recep/create", {
-          method: "POST",
-          body: JSON.stringify({
-            product_id: productId,
-            note,
-            ingredients
-          })
+      await apiFetch("/api/recep/save", {
+        method: "POST",
+        body: JSON.stringify({
+          product_id: productId,
+          note,
+          ingredients,
+          packagings,
+          deleted_detail_ids: deletedIds,
+          deleted_packaging_ids: deletedPackagingIds
         })
-      } else {
-        // UPDATE
-        await apiFetch(`/auth/recep/${productId}`, {
-          method: "PUT",
-          body: JSON.stringify({
-            note,
-            deleted_detail_ids: deletedIds,
-            ingredients
-          })
-        })
-      }
+      })
 
       window.location.reload()
 
@@ -113,7 +109,31 @@ const ResepProdukCard = ({ data, productId }) => {
     }
   }
 
-  // ================= VIEW MODE =================
+  const addPackagingRow = () => {
+    setPackagings([
+      ...packagings,
+      { ingredient_id: "", quantity: "" }
+    ])
+  }
+
+  const removePackagingRow = (index) => {
+    const item = packagings[index]
+
+    if (item.detail_id) {
+      setDeletedPackagingIds([
+        ...deletedPackagingIds,
+        item.detail_id
+      ])
+    }
+
+    setPackagings(packagings.filter((_, i) => i !== index))
+  }
+
+  const handlePackagingChange = (index, field, value) => {
+    const updated = [...packagings]
+    updated[index][field] = value
+    setPackagings(updated)
+  }
     if (mode === "view") {
         return (
             <Card>
@@ -127,6 +147,7 @@ const ResepProdukCard = ({ data, productId }) => {
             <CardContent className="space-y-4">
 
                 {/* NOTE */}
+                <h3 className="font-semibold">Catatan</h3>
                 {data.note && (
                 <div className="overflow-hidden">
                     <div
@@ -135,6 +156,8 @@ const ResepProdukCard = ({ data, productId }) => {
                     />
                 </div>
                 )}
+                <hr className="my-4" />
+                <h3 className="font-semibold">Bahan</h3>
                 {data.ingredients.map((item) => (
                 <div key={item.detail_id} className="flex justify-between">
                     <span>{item.ingredient_name}</span>
@@ -143,6 +166,20 @@ const ResepProdukCard = ({ data, productId }) => {
                     </span>
                 </div>
                 ))}
+                {data.packagings?.length > 0 && (
+                  <>
+                    <hr className="my-4" />
+                    <h3 className="font-semibold">Packaging</h3>
+                    {data.packagings.map((item) => (
+                      <div key={item.detail_id} className="flex justify-between">
+                        <span>{item.ingredient_name}</span>
+                        <span>
+                          {formatQty(item.quantity)} {item.satuan_kode}
+                        </span>
+                      </div>
+                    ))}
+                  </>
+                )}
 
             </CardContent>
             </Card>
@@ -165,69 +202,135 @@ const ResepProdukCard = ({ data, productId }) => {
           </label>
           <ReactQuill value={note} onChange={setNote} />
         </div>
-        <div className="space-y-3 ">
-            <div className="overflow-x-auto pb-4">
-                <div className="min-w-[300px] space-y-2 ">
+        <div className="space-y-3">
+          <h3 className="font-semibold">Bahan Baku</h3>
 
-                {ingredients.map((item, index) => (
-                    <div
-                    key={index}
-                    className="flex items-center gap-3"
-                    >
-                    <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => removeRow(index)}
-                        className="shrink-0"
-                    >
-                        X
-                    </Button>
-                    <div className="flex-1 min-w-[250px]">
-                        <Select
-                        value={item.ingredient_id?.toString()}
-                        onValueChange={(val) =>
-                            handleChange(index, "ingredient_id", val)
-                        }
-                        >
-                        <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Pilih bahan" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {ingredientsList.map((bahan) => (
-                            <SelectItem
-                                key={bahan.id}
-                                value={bahan.id.toString()}
-                            >
-                                {bahan.nama} ({bahan.satuan_kode})
-                            </SelectItem>
-                            ))}
-                        </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="w-[150px] shrink-0">
-                        <Input
-                        type="number"
-                        placeholder="Qty"
-                        value={formatQty(item.quantity)}
-                        onChange={(e) =>
-                            handleChange(index, "quantity", e.target.value)
-                        }
-                        />
-                    </div>
+          {ingredients.map((item, index) => (
+            <div key={index} className="flex items-center gap-3">
 
-                    </div>
-                ))}
+              <Button
+                variant="destructive"
+                size="icon"
+                onClick={() => removeRow(index)}
+              >
+                X
+              </Button>
 
-                </div>
+              <div className="flex-1">
+                <IngredientDropdown
+                  value={item.ingredient_id}
+                  setValue={(val) =>
+                    handleChange(index, "ingredient_id", val)
+                  }
+                  list={ingredientsList}
+                />
+              </div>
+
+              <div className="w-[120px] relative">
+                <Input
+                  type="number"
+                  placeholder="0"
+                  className="pr-10"
+                  value={formatQty(item.quantity)}
+                  onChange={(e) =>
+                    handleChange(index, "quantity", e.target.value)
+                  }
+                />
+
+                {item.ingredient_id && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
+                    {
+                      ingredientsList.find(
+                        (i) =>
+                          String(i.id) ===
+                          String(item.ingredient_id)
+                      )?.satuan_kode
+                    }
+                  </span>
+                )}
+              </div>
+
             </div>
+          ))}
+
+          {/* BUTTON TAMBAH */}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={addRow}
+          >
+            +
+          </Button>
+        </div> 
+        <hr className="my-6 border-t" />
+        <div className="space-y-3">
+          <h3 className="font-semibold">Packaging</h3>
+
+          {packagings.map((item, index) => (
+            <div key={index} className="flex items-center gap-3">
+
+              <Button
+                variant="destructive"
+                size="icon"
+                onClick={() => removePackagingRow(index)}
+              >
+                X
+              </Button>
+
+              <div className="flex-1">
+                <IngredientDropdown
+                  value={item.ingredient_id}
+                  setValue={(val) =>
+                    handlePackagingChange(
+                      index,
+                      "ingredient_id",
+                      val
+                    )
+                  }
+                  list={packagingList}
+                />
+              </div>
+
+              <div className="w-[120px] relative">
+                <Input
+                  type="number"
+                  placeholder="0"
+                  className="pr-10"
+                  value={formatQty(item.quantity)}
+                  onChange={(e) =>
+                    handlePackagingChange(
+                      index,
+                      "quantity",
+                      e.target.value
+                    )
+                  }
+                />
+
+                {item.ingredient_id && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
+                    {
+                      packagingList.find(
+                        (i) =>
+                          String(i.id) ===
+                          String(item.ingredient_id)
+                      )?.satuan_kode
+                    }
+                  </span>
+                )}
+              </div>
+
+            </div>
+          ))}
+
+          {/* BUTTON TAMBAH PACKAGING */}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={addPackagingRow}
+          >
+            +
+          </Button>
         </div>
-
-        <Button onClick={addRow} variant="outline">
-          + Tambah Bahan
-        </Button>
-
-        {/* NOTE */}
-        
 
         <Button
           onClick={handleSubmit}
