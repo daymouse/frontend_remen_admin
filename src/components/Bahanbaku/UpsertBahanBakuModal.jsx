@@ -201,6 +201,9 @@ export default function UpsertBahanBakuModal({
                     <SelectItem value="operasional">
                       Operasional
                     </SelectItem>
+                    <SelectItem value="packaging">
+                      Packaging
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </Field>

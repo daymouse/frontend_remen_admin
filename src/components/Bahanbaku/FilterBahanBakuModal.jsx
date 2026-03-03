@@ -181,6 +181,7 @@ export default function FilterBahanBakuModal({
                 <SelectContent>
                   <SelectItem value="produksi">Produksi</SelectItem>
                   <SelectItem value="operasional">Operasional</SelectItem>
+                  <SelectItem value="packaging">Packaging</SelectItem>
                 </SelectContent>
               </Select>
             </div>
