@@ -40,7 +40,7 @@ const BahanBaku = () => {
   const [searchValue, setSearchValue] = useState("")
   const [open, setOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
-
+  const [hasPending, setHasPending] = useState(false);
   const perPageOptions = [10, 20, 30, 40, 50]
 
   const [perPage, setPerPage] = useState(perPageOptions[0])
@@ -85,6 +85,18 @@ const BahanBaku = () => {
   }
 }
 
+const fetchPending = async () => {
+  try {
+    const res = await apiFetch("/api/laporan/stok/haspending");
+
+    console.log("FULL RESPONSE:", res);
+
+    setHasPending(!!res.has_pending);
+  } catch (err) {
+    console.error("Gagal mengambil pending count", err);
+  }
+};
+
 
 useEffect(() => {
   const delay = setTimeout(() => {
@@ -96,6 +108,7 @@ useEffect(() => {
 
  useEffect(() => {
   fetchData()
+  fetchPending()
 }, [page, perPage, filters])
 
   useEffect(() => {
@@ -368,6 +381,10 @@ const handleExportWord = () => {
             <DropdownMenuTrigger asChild>
               <Button size="icon" className="relative" variant="outline">
                 <MoreVertical className="h-5 w-5" />
+
+                {hasPending && (
+                  <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+                )}
               </Button>
             </DropdownMenuTrigger>
 
@@ -391,6 +408,26 @@ const handleExportWord = () => {
                   }
                 >
                   Laporan Stok
+                </NavLink>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <NavLink
+                  to="/dashboard/stok-adjustment"
+                  className={({ isActive }) =>
+                    `flex items-center justify-between ${
+                      isActive
+                        ? "font-semibold text-primary"
+                        : "text-muted-foreground"
+                    }`
+                  }
+                >
+                  <>
+                    <span>Laporan real stok</span>
+
+                    {hasPending && (
+                      <span className="h-2 w-2 rounded-full bg-red-500" />
+                    )}
+                  </>
                 </NavLink>
               </DropdownMenuItem>
               <DropdownMenuItem
