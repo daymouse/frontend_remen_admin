@@ -17,6 +17,8 @@ import Profil from "@/pages/ProfileAdmin"
 import AuthResetPassword from "@/pages/AuthResetPassword"
 import BahanBaku from "@/pages/BahanBaku";
 import DetailProdukPage from "./detailProduk";
+import StokMovement from "@/pages/BahanBaku/StokMovement"
+import StokRealPage from "@/pages/BahanBaku/LaporanStokReal"
 
 export default function Dashboard() {
   return (
@@ -40,6 +42,8 @@ export default function Dashboard() {
           <Route path="reset-password" element={<AuthResetPassword />} />
           <Route path="bahan-baku" element={<BahanBaku />} />
           <Route path="detail-produk/:id" element={<DetailProdukPage />} />
+          <Route path="stok-movement/:id" element={<StokMovement />} />
+          <Route path="stok-adjustment" element={<StokRealPage />} />
         </Routes>
       </main>
     </div>

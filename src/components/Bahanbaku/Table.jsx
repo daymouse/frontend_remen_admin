@@ -7,7 +7,7 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table"
-
+import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -24,6 +24,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { MoreVertical, Save, X } from "lucide-react"
+import { NavLink } from "react-router-dom";
 
 export default function BahanBakuTable({
   data,
@@ -64,6 +65,14 @@ export default function BahanBakuTable({
   return new Intl.NumberFormat("id-ID", {
     maximumFractionDigits: 3,
   }).format(number)
+}
+const getStockVariant = (stok, minimal) => {
+  const s = Number(stok) || 0
+  const m = Number(minimal) || 0
+
+  if (s <= 0) return "destructive" 
+  if (s <= m) return "secondary"   
+  return "default"              
 }
 
   return (
@@ -133,7 +142,29 @@ export default function BahanBakuTable({
                   </TableCell>
 
                   {/* STOK */}
-                  <TableCell> {formatNumber(item.stok_sistem)} {item.satuan_kode}</TableCell>
+                  <TableCell>
+                    <NavLink
+                      to={`/dashboard/stok-movement/${item.id}`}
+                      className="inline-block no-underline"
+                    >
+                      <Badge
+                        variant={getStockVariant(item.stok_sistem, item.minimal_stok)}
+                        className={`
+                          cursor-pointer
+                          pointer-events-auto
+                          ${
+                            Number(item.stok_sistem) <= 0
+                              ? ""
+                              : Number(item.stok_sistem) <= Number(item.minimal_stok)
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-green-100 text-green-800"
+                          }
+                        `}
+                      >
+                        {formatNumber(item.stok_sistem)} {item.satuan_kode}
+                      </Badge>
+                    </NavLink>
+                  </TableCell>
 
                   {/* MINIMAL STOK */}
                   <TableCell>

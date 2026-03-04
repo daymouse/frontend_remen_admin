@@ -21,6 +21,7 @@ import * as XLSX from "xlsx"
 import { saveAs } from "file-saver"
 import UpsertBahanBakuModal from "@/components/Bahanbaku/UpsertBahanBakuModal";
 import FilterBahanBakuModal from "@/components/Bahanbaku/FilterBahanBakuModal";
+import { NavLink } from "react-router-dom"
 
 const BahanBaku = () => {
   const primary = "#622F10";
@@ -379,6 +380,18 @@ const handleExportWord = () => {
                 className="cursor-pointer"
               >
                 Tambah Bahan
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <NavLink
+                  to="/dashboard/stok-adjustment"
+                  className={({ isActive }) =>
+                    isActive
+                      ? "font-semibold text-primary"
+                      : "text-muted-foreground"
+                  }
+                >
+                  Laporan Stok
+                </NavLink>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setFilterOpen(true)}
