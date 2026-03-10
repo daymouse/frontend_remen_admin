@@ -3,6 +3,7 @@ import { apiFetch } from "@/server";
 import AddMemberModal from "@/components/ManajementUser/AddMemberModal";
 import { useNavigate } from "react-router-dom";
 import TableBahan from "@/components/Bahanbaku/Table"
+import InventorySummary from "@/components/Bahanbaku/SummaryCard"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -22,6 +23,7 @@ import { saveAs } from "file-saver"
 import UpsertBahanBakuModal from "@/components/Bahanbaku/UpsertBahanBakuModal";
 import FilterBahanBakuModal from "@/components/Bahanbaku/FilterBahanBakuModal";
 import { NavLink } from "react-router-dom"
+import ActiveFilters from "@/components/Bahanbaku/ActiveFilters"
 
 const BahanBaku = () => {
   const primary = "#622F10";
@@ -42,19 +44,27 @@ const BahanBaku = () => {
   const [selectedItem, setSelectedItem] = useState(null)
   const [hasPending, setHasPending] = useState(false);
   const perPageOptions = [10, 20, 30, 40, 50]
-
   const [perPage, setPerPage] = useState(perPageOptions[0])
-
+    const [summary, setSummary] = useState({
+    total_inventory_value_sistem: 0,
+    total_inventory_value_real: 0,
+    total_bahan: 0,
+    last_sync: null,
+  })
+  const [summaryLoading, setSummaryLoading] = useState(true)
   const navigate = useNavigate();
   const inputRef = useRef(null);
   const [filterOpen, setFilterOpen] = useState(false)
 
-    const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState({
     tipe: "",
     satuan_tipe: "",
     avg_cost_min: "",
     avg_cost_max: "",
-    })
+    start_date: "",
+    end_date: "",
+    low_stock: false,
+  })
 
   const fetchData = async () => {
   try {
@@ -63,14 +73,20 @@ const BahanBaku = () => {
     const response = await apiFetch("/auth/bahan-baku-list", {
       method: "POST",
       body: JSON.stringify({
-        page,
-        perPage,
-        search: searchValue,
-        tipe: filters.tipe || null,
-        satuan_tipe: filters.satuan_tipe || null,
-        avg_cost_min: filters.avg_cost_min || null,
-        avg_cost_max: filters.avg_cost_max || null,
-      }),
+      page,
+      perPage,
+      search: searchValue,
+
+      tipe: filters.tipe || null,
+      satuan_tipe: filters.satuan_tipe || null,
+
+      avg_cost_min: filters.avg_cost_min || null,
+      avg_cost_max: filters.avg_cost_max || null,
+
+      start_date: filters.start_date || null,
+      end_date: filters.end_date || null,
+      low_stock: filters.low_stock ?? null,
+    })
     })
 
     if (response.data) {
@@ -88,14 +104,29 @@ const BahanBaku = () => {
 const fetchPending = async () => {
   try {
     const res = await apiFetch("/api/laporan/stok/haspending");
-
-    console.log("FULL RESPONSE:", res);
-
     setHasPending(!!res.has_pending);
   } catch (err) {
     console.error("Gagal mengambil pending count", err);
   }
 };
+
+  const fetchSummary = async () => {
+    try {
+      setSummaryLoading(true)
+
+      const response = await apiFetch("/auth/inventory/summery", {
+        method: "GET",
+      })
+
+      if (response.status === "success") {
+        setSummary(response.data)
+      }
+    } catch (err) {
+      console.error("Gagal mengambil inventory summary", err)
+    } finally {
+      setSummaryLoading(false)
+    }
+  }
 
 
 useEffect(() => {
@@ -106,10 +137,11 @@ useEffect(() => {
   return () => clearTimeout(delay)
 }, [searchValue])
 
- useEffect(() => {
-  fetchData()
-  fetchPending()
-}, [page, perPage, filters])
+  useEffect(() => {
+    fetchData()
+    fetchPending()
+    fetchSummary()
+  }, [page, perPage, filters])
 
   useEffect(() => {
     setPage(1)
@@ -122,31 +154,72 @@ useEffect(() => {
   }
 
 
-  const confirmDelete = async (id_petugas, fullname) => {
+
+  const confirmDelete = async (id, nama) => {
     const ok = await confirm(
-      `Apakah Anda yakin ingin menghapus user @${fullname}?`
+      `Apakah Anda yakin ingin menonaktifkan bahan "${nama}"?`
     )
 
     if (!ok) return
 
     try {
-      setDeletingId(id_petugas)
+      setDeletingId(id)
 
-      const response = await apiFetch(
-        `/api/manajement-user/delete/${id_petugas}`,
-        { method: "DELETE" }
-      )
+      const response = await apiFetch("/api/bahan-baku-delete", {
+        method: "POST",
+        body: JSON.stringify({
+          id: id,
+        }),
+      })
 
-      if (response.message) {
-        await alert("User berhasil dihapus")
+      if (response.success) {
+        await alert(response.message || "Bahan baku berhasil hapus")
         fetchData()
+        fetchSummary()
+      } else {
+        await alert(response.message || "Gagal menghapus bahan")
       }
     } catch (err) {
-      await alert(err.message || "Gagal menghapus user")
+      await alert(err.message || "Terjadi kesalahan server")
     } finally {
       setDeletingId(null)
     }
-}
+  }
+
+  const handlePushStock = async (ids = []) => {
+    try {
+      const ok = await confirm(
+        ids.length > 1
+          ? `Push sinkronisasi ${ids.length} bahan?`
+          : "Push sinkronisasi stok bahan ini?"
+      )
+
+      if (!ok) return
+
+      const response = await apiFetch("/api/stok/push-stok", {
+        method: "POST",
+        body: JSON.stringify({
+          bahan_ids: ids,
+        }),
+      })
+
+      if (!response.success) {
+        alert(response.message || "Gagal push stok")
+        return
+      }
+
+      await alert(
+        `Berhasil push ${response.pushed.length} bahan\n` +
+        `Skipped ${response.skipped.length} bahan`
+      )
+
+      fetchData()
+      fetchPending()
+    } catch (err) {
+      console.error(err)
+      alert("Terjadi kesalahan saat push stok")
+    }
+  }
 
   useEffect(() => {
     if (successMessage) {
@@ -225,6 +298,20 @@ useEffect(() => {
     return `${y}${m}${d}_${h}${min}`
   }
 
+    const hitungSelisihPersen = (stokSistem, stokReal) => {
+    const sistem = Number(stokSistem)
+    const real = Number(stokReal)
+
+    if (isNaN(sistem) || isNaN(real)) return 0
+    if (sistem === 0 && real === 0) return 0
+    if (sistem === 0) return 100
+
+    const selisih = real - sistem
+    const persen = (selisih / sistem) * 100
+
+    return Number(persen.toFixed(2))
+  }
+
     const handlePrint = () => {
     const printWindow = window.open("", "_blank")
 
@@ -234,6 +321,8 @@ useEffect(() => {
         <td>${item.nama}</td>
         <td>${item.tipe}</td>
         <td>${formatNumber(item.stok_sistem)} ${item.satuan_kode}</td>
+        <td>${formatNumber(item.stok_real)} ${item.satuan_kode}</td>
+        <td>${hitungSelisihPersen(item.stok_sistem, item.stok_real)}%</td>
         <td>${formatNumber(item.minimal_stok)} ${item.satuan_kode}</td>
         <td>${formatRupiah(item.avg_cost)}</td>
         <td>${item.satuan_tipe}</td>
@@ -261,6 +350,8 @@ useEffect(() => {
                 <th>Nama</th>
                 <th>Tipe</th>
                 <th>Stok Sistem</th>
+                <th>Stok Real</th>
+                <th>Selisih</th>
                 <th>Minimal Stok</th>
                 <th>Avg Cost</th>
                 <th>Satuan</th>
@@ -284,9 +375,11 @@ const handleExportExcel = () => {
     No: index + 1,
     Nama: item.nama,
     Tipe: item.tipe,
-    "Stok Sistem": `${item.stok_sistem} ${item.satuan_kode}`,
-    "Minimal Stok": `${item.minimal_stok} ${item.satuan_kode}`,
-    "Avg Cost": item.avg_cost,
+    "Stok Sistem": `${formatNumber(item.stok_sistem)} ${item.satuan_kode}`,
+    "Stok Real":`${formatNumber(item.stok_real)} ${item.satuan_kode}`,
+    "Selisih":`${hitungSelisihPersen(item.stok_sistem, item.stok_real)}%`,
+    "Minimal Stok": `${formatNumber(item.minimal_stok)} ${item.satuan_kode}`,
+    "Avg Cost": formatRupiah(item.avg_cost),
     "Satuan Tipe": item.satuan_tipe,
   }))
 
@@ -340,6 +433,8 @@ const handleExportWord = () => {
             <th>Nama</th>
             <th>Tipe</th>
             <th>Stok Sistem</th>
+            <th>Stok Real</th>
+            <th>Selisih</th>
             <th>Minimal Stok</th>
             <th>Avg Cost</th>
             <th>Satuan</th>
@@ -350,6 +445,8 @@ const handleExportWord = () => {
               <td>${item.nama}</td>
               <td>${item.tipe}</td>
               <td>${formatNumber(item.stok_sistem)} ${item.satuan_kode}</td>
+              <td>${formatNumber(item.stok_real)} ${item.satuan_kode}</td>
+              <td>${hitungSelisihPersen(item.stok_sistem, item.stok_real)}%</td>
               <td>${formatNumber(item.minimal_stok)} ${item.satuan_kode}</td>
               <td>${formatRupiah(item.avg_cost)}</td>
               <td>${item.satuan_tipe}</td>
@@ -370,8 +467,7 @@ const handleExportWord = () => {
 
   return (
     <div className="p-4 max-w-6xl mx-auto">
-      {/* Header Section */}
-      <div className="mb-6 flex flex-row items-center justify-between">
+      <div className="mb-6 flex flex-row justify-between">
         <div className="mb-4">
           <h1 className="text-2xl font-bold text-gray-900">Stok Bahan Baku</h1>
           <p className="text-gray-600 mt-1">Kelola data bahan baku</p>
@@ -412,7 +508,7 @@ const handleExportWord = () => {
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <NavLink
-                  to="/dashboard/stok-adjustment"
+                  to="/dashboard/stok-pending"
                   className={({ isActive }) =>
                     `flex items-center justify-between ${
                       isActive
@@ -422,7 +518,7 @@ const handleExportWord = () => {
                   }
                 >
                   <>
-                    <span>Laporan real stok</span>
+                    <span>Laporan stok pending</span>
 
                     {hasPending && (
                       <span className="h-2 w-2 rounded-full bg-red-500" />
@@ -460,6 +556,10 @@ const handleExportWord = () => {
         </div>
       </div>
 
+      <InventorySummary 
+        data={summary}
+        loading={summaryLoading}
+      />
       {deletingId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3">
@@ -484,7 +584,7 @@ const handleExportWord = () => {
               />
             </svg>
             <span className="text-sm font-medium">
-              Menghapus & Mengirim Email...
+              loading
             </span>
           </div>
         </div>
@@ -513,6 +613,21 @@ const handleExportWord = () => {
           </Alert>
         </div>
       )}
+      <ActiveFilters
+        filter={filters}
+        onClear={() => {
+          setFilters({
+            tipe: "",
+            satuan_tipe: "",
+            avg_cost_min: "",
+            avg_cost_max: "",
+            start_date: "",
+            end_date: "",
+            low_stock: false,
+          })
+          setPage(1)
+        }}
+      />
 
       <TableBahan
         data={data}
@@ -528,6 +643,7 @@ const handleExportWord = () => {
         loading={loading}
         onEdit={handleEdit}
         perPageOptions={perPageOptions}
+        onPushStock={handlePushStock}
       />
 
       <AddMemberModal
@@ -548,11 +664,11 @@ const handleExportWord = () => {
         />
 
       <UpsertBahanBakuModal
-  open={open}
-  onClose={() => setOpen(false)}
-  item={selectedItem}
-  onSave={handleSave}
-/>
+        open={open}
+        onClose={() => setOpen(false)}
+        item={selectedItem}
+        onSave={handleSave}
+      />
     </div>
   );
 };

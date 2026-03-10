@@ -19,6 +19,9 @@ import BahanBaku from "@/pages/BahanBaku";
 import DetailProdukPage from "./detailProduk";
 import StokMovement from "@/pages/BahanBaku/StokMovement"
 import StokRealPage from "@/pages/BahanBaku/LaporanStokReal"
+import LaporanRealStok from "@/pages/BahanBaku/LaporanStokPending"
+import DetailLaporanRealStok from "@/pages/BahanBaku/detailStokPending/DetailStokPending"
+import HistoryAsynStok from "@/pages/BahanBaku/historyAsynStok/Index"
 
 export default function Dashboard() {
   return (
@@ -44,6 +47,9 @@ export default function Dashboard() {
           <Route path="detail-produk/:id" element={<DetailProdukPage />} />
           <Route path="stok-movement/:id" element={<StokMovement />} />
           <Route path="stok-adjustment" element={<StokRealPage />} />
+          <Route path="stok-pending" element={<LaporanRealStok />} />
+          <Route path="stok-pending/:id" element={<DetailLaporanRealStok />} />
+          <Route path="history-asyn-stok/:id" element={<HistoryAsynStok />} />
         </Routes>
       </main>
     </div>

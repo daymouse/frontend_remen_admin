@@ -251,7 +251,7 @@ function DateRangePicker({ label, value, setValue }) {
             mode="range"
             selected={value}
             onSelect={setValue}
-            numberOfMonths={2}
+            numberOfMonths={1}
           />
         </PopoverContent>
       </Popover>

@@ -113,6 +113,20 @@ export default function UpsertBahanBakuModal({
     }))
   }
 
+   const formatNumber = (value) => {
+    if (!value) return "0"
+
+    const number = parseFloat(value)
+    if (number % 1 === 0) {
+      return new Intl.NumberFormat("id-ID", {
+        maximumFractionDigits: 0,
+      }).format(number)
+    }
+    return new Intl.NumberFormat("id-ID", {
+      maximumFractionDigits: 3,
+    }).format(number)
+  }
+
   const resetForm = () => {
     setFormData({
         nama: "",
@@ -245,12 +259,11 @@ export default function UpsertBahanBakuModal({
             </Alert>
           ) : null}
 
-          {/* Minimal Stok */}
           <Field icon={Package} label="Minimal Stok">
             <Input
               type="number"
               placeholder="Masukkan minimal stok"
-              value={formData.minimal_stok}
+              value={formatNumber(formData.minimal_stok)}
               onChange={(e) =>
                 handleChange("minimal_stok", e.target.value)
               }

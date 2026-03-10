@@ -137,10 +137,8 @@ const totalBayar = useMemo(() => {
                   ))}
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
-
             </DropdownMenuContent>
           </DropdownMenu>
-
         </div>
       </div>
       <div className="rounded-lg border bg-background overflow-auto" id="printArea" ref={printAreaRef}>

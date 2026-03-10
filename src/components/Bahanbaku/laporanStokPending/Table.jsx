@@ -24,9 +24,10 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { MoreVertical, Save, X } from "lucide-react"
-import { NavLink } from "react-router-dom";
+import { useNavigate, NavLink } from "react-router-dom"
 
 export default function BahanBakuTable({
+  petugas,
   data,
   search,
   setSearch,
@@ -40,13 +41,15 @@ export default function BahanBakuTable({
   onUpdate,
   onEdit,
   perPageOptions,
-  onPushStock,
+  onReject,
+  onApprove,
+  selectedIds,
+  setSelectedIds
 }) {
-
+  const navigate = useNavigate()
   const [selectionMode, setSelectionMode] = useState(false)
-  const [selectedIds, setSelectedIds] = useState([])
 
-  const toggleSelect = (id) => {
+  const handleToggle = (id) => {
     setSelectedIds((prev) =>
       prev.includes(id)
         ? prev.filter((x) => x !== id)
@@ -54,49 +57,9 @@ export default function BahanBakuTable({
     )
   }
 
-  const handleBulkSync = () => {
-    if (selectedIds.length === 0) return
-
-    onPushStock(selectedIds)
-
-    setSelectedIds([])
-    setSelectionMode(false)
+  const handleSelectAll = (ids) => {
+    setSelectedIds(ids)
   }
-
-  const toggleSelectAll = () => {
-    if (selectedIds.length === data.length) {
-      setSelectedIds([])
-    } else {
-      setSelectedIds(data.map((item) => item.id))
-    }
-  }
-
-  function formatRupiah(value) {
-    if (value == null) return "Rp 0"
-    return `Rp ${Number(value).toLocaleString("id-ID")}`
-    }
-  const formatNumber = (value) => {
-  if (!value) return "0"
-
-  const number = parseFloat(value)
-    if (number % 1 === 0) {
-      return new Intl.NumberFormat("id-ID", {
-        maximumFractionDigits: 0,
-      }).format(number)
-    }
-    return new Intl.NumberFormat("id-ID", {
-      maximumFractionDigits: 3,
-    }).format(number)
-  }
-  const getStockVariant = (stok, minimal) => {
-    const s = Number(stok) || 0
-    const m = Number(minimal) || 0
-
-    if (s <= 0) return "destructive" 
-    if (s <= m) return "secondary"   
-    return "default"              
-  }
-
   const formatTanggalIndo = (dateStr) => {
     if (!dateStr) return "-"
 
@@ -122,21 +85,24 @@ export default function BahanBakuTable({
     <div className="space-y-4">
       <div className="flex justify-between items-center gap-2">
         <Input
-          placeholder="Cari bahan baku..."
+          placeholder="Cari Fullname Atau Kelas"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm bg-background"
         />
-        <div className="flex gap-2">
+        <div className="flex items-center justify-end gap-2">
           {selectionMode && (
             <>
               <Button
                 size="sm"
                 variant="outline"
-                onClick={handleBulkSync}
+                onClick={() => {
+                  onReject()
+                  setSelectionMode(false)
+                }}
                 disabled={selectedIds.length === 0}
               >
-                Sinkronkan {selectedIds.length}
+                Reject
               </Button>
 
               <Button
@@ -151,63 +117,72 @@ export default function BahanBakuTable({
               </Button>
             </>
           )}
-          <div className="flex items-center justify-end gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="icon" variant="outline">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="outline">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  onClick={() => {
+               <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation()
                     setSelectionMode(true)
                   }}
+                  className="text-red-600"
                 >
-                  Sinkronkan Stok
+                  Reject
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
+          </DropdownMenu>
           </div>
-        </div>
       </div>
+
+      {/* TABLE */}
       <div className="rounded-lg border bg-background overflow-auto">
         <UITable>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[60px]">
+              <TableHead>
                 {selectionMode && (
                   <input
                     type="checkbox"
-                    checked={selectedIds.length === data.length && data.length > 0}
-                    onChange={toggleSelectAll}
-                    className="w-4 h-4"
+                    checked={
+                      data.length > 0 &&
+                      data.every((d) => selectedIds.includes(d.id))
+                    }
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        handleSelectAll(data.map((d) => d.id))
+                      } else {
+                        handleSelectAll([])
+                      }
+                    }}
                   />
                 )}
               </TableHead>
-              <TableHead>Nama</TableHead>
-              <TableHead>Tipe</TableHead>
-              <TableHead>Stok Sistem</TableHead>
-              <TableHead>Stok Real</TableHead>
-              <TableHead>Stok Selisih</TableHead>
-              <TableHead>Minimal Stok</TableHead>
-              <TableHead>Avg Cost</TableHead>
-              <TableHead>Terakhir Sync Stok</TableHead>
+              <TableHead>Fullname</TableHead>
+              <TableHead>Kelas</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Tanggal</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
             {data?.map((item) => {
+
               return (
-                <TableRow key={item.id}>
-                  <TableCell>
+                <TableRow
+                  key={item.id}
+                  onClick={() => navigate(`/dashboard/stok-pending/${item.id}`)}
+                  className="cursor-pointer hover:bg-gray-50 group"
+                >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     {selectionMode ? (
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(item.id)}
-                        onChange={() => toggleSelect(item.id)}
-                        className="w-4 h-4"
+                        onChange={() => handleToggle(item.id)}
                       />
                     ) : (
                       <DropdownMenu>
@@ -218,81 +193,42 @@ export default function BahanBakuTable({
                         </DropdownMenuTrigger>
 
                         <DropdownMenuContent align="start">
-                          <NavLink
-                            to={`/dashboard/stok-movement/${item.id}`}
-                          >
-                          <DropdownMenuItem
-                          >
-                            riwayat Stok
-                          </DropdownMenuItem>
+                          <NavLink to={`/dashboard/stok-pending/${item.id}`}>
+                            <DropdownMenuItem>
+                              Detail
+                            </DropdownMenuItem>
                           </NavLink>
-                          <DropdownMenuItem
-                            onClick={() => onPushStock([item.id])}
-                          >
-                            Sinkronkan Stok
+
+                          <DropdownMenuItem onClick={() => onApprove(item)}>
+                            Approve
                           </DropdownMenuItem>
-                          <NavLink
-                            to={`/dashboard/history-asyn-stok/${item.id}`}
-                          >
+
                           <DropdownMenuItem
-                          >
-                            riwayat Asyn Stok
-                          </DropdownMenuItem>
-                          </NavLink>
-                          <DropdownMenuItem onClick={() => onEdit(item)}>
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => onDelete(item.id, item.nama)}
+                            onClick={() => onReject(item)}
                             className="text-red-600"
                           >
-                            Hapus
+                            Reject
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
                   </TableCell>
-                  <TableCell>
-                      {item.nama}
-                  </TableCell>
-                  <TableCell>
-                      {item.tipe}
-                  </TableCell>
-                  <TableCell>
-                    <NavLink
-                      to={`/dashboard/stok-movement/${item.id}`}
-                      className="inline-block no-underline"
-                    >
-                      <Badge
-                        variant={getStockVariant(item.stok_sistem, item.minimal_stok)}
-                        className={`
-                          cursor-pointer
-                          pointer-events-auto
-                          ${
-                            Number(item.stok_sistem) <= 0
-                              ? ""
-                              : Number(item.stok_sistem) <= Number(item.minimal_stok)
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-green-100 text-green-800"
-                          }
-                        `}
-                      >
-                        {formatNumber(item.stok_sistem)} {item.satuan_kode}
-                      </Badge>
-                    </NavLink>
-                  </TableCell>
-                  <TableCell>
-                        {formatNumber(item.stok_real)} {item.satuan_kode}
-                  </TableCell>
-                  <TableCell>
-                        {item.selisih_persen}%
+
+                  <TableCell className="group-hover:underline">
+                    {item.petugas.fullname}
                   </TableCell>
 
-                  <TableCell>
-                        {formatNumber(item.minimal_stok)} {item.satuan_kode}
+                  <TableCell className="group-hover:underline">
+                    {item.petugas.kelas}
                   </TableCell>
-                  <TableCell>{formatRupiah(item.avg_cost)}</TableCell>
-                  <TableCell>{formatTanggalIndo(item.last_stock_sync)}</TableCell>
+
+                  <TableCell className="group-hover:underline">
+                    {item.status}
+                  </TableCell>
+
+                  <TableCell className="group-hover:underline">
+                    {formatTanggalIndo(item.created_at)}
+                  </TableCell>
                 </TableRow>
               )
             })}
@@ -322,8 +258,6 @@ export default function BahanBakuTable({
             </SelectContent>
             </Select>
         </div>
-
-        {/* Page Info */}
         <div className="flex items-center gap-4">
 
             <Button

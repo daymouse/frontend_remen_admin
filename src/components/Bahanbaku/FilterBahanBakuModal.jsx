@@ -18,6 +18,15 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InfoIcon } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { CalendarIcon } from "lucide-react"
+import { format } from "date-fns"
 
 const formatRupiah = (value) => {
   if (!value) return ""
@@ -35,11 +44,15 @@ export default function FilterBahanBakuModal({
   onApply,
   currentFilter,
 }) {
+  const [tanggalRange, setTanggalRange] = useState()
   const [filter, setFilter] = useState({
     tipe: "",
     satuan_tipe: "",
     avg_cost_min: "",
     avg_cost_max: "",
+    start_date: "",
+    end_date: "",
+    low_stock: false,
   })
 
   const [error, setError] = useState("")
@@ -47,6 +60,17 @@ export default function FilterBahanBakuModal({
   useEffect(() => {
     if (currentFilter) {
       setFilter(currentFilter)
+
+      if (currentFilter.start_date || currentFilter.end_date) {
+        setTanggalRange({
+          from: currentFilter.start_date
+            ? new Date(currentFilter.start_date)
+            : undefined,
+          to: currentFilter.end_date
+            ? new Date(currentFilter.end_date)
+            : undefined,
+        })
+      }
     }
   }, [currentFilter])
 
@@ -127,7 +151,12 @@ export default function FilterBahanBakuModal({
       satuan_tipe: "",
       avg_cost_min: "",
       avg_cost_max: "",
+      start_date: "",
+      end_date: "",
+      low_stock: false,
     }
+
+    setTanggalRange(undefined)
     setFilter(resetValue)
     setError("")
     onApply(resetValue)
@@ -148,6 +177,12 @@ export default function FilterBahanBakuModal({
       ...filter,
       avg_cost_min: min || "",
       avg_cost_max: max || "",
+      start_date: tanggalRange?.from
+        ? format(tanggalRange.from, "yyyy-MM-dd")
+        : "",
+      end_date: tanggalRange?.to
+        ? format(tanggalRange.to, "yyyy-MM-dd")
+        : "",
     })
 
     onClose(false)
@@ -234,6 +269,54 @@ export default function FilterBahanBakuModal({
                 onBlur={handleMaxBlur}
               />
             </div>
+          </div>
+          <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Periode Last Sync</Label>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+
+                  {tanggalRange?.from
+                    ? tanggalRange.to
+                      ? `${format(tanggalRange.from, "dd MMM yyyy")} - ${format(tanggalRange.to, "dd MMM yyyy")}`
+                      : format(tanggalRange.from, "dd MMM yyyy")
+                    : "Pilih tanggal"}
+                </Button>
+              </PopoverTrigger>
+
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="range"
+                  selected={tanggalRange}
+                  onSelect={setTanggalRange}
+                  numberOfMonths={1}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+          
+
+          <div className="flex items-center justify-between border rounded-lg p-3">
+            <div>
+              <Label>Stok Hampir Habis</Label>
+              <p className="text-xs text-muted-foreground">
+                Tampilkan bahan baku dengan stok di bawah minimal
+              </p>
+            </div>
+
+            <Switch
+              checked={filter.low_stock}
+              onCheckedChange={(val) =>
+                handleChange("low_stock", val)
+              }
+            />
           </div>
 
           {error && (

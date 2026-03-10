@@ -26,13 +26,10 @@ export default function PesananTable({
   onPageChange,
   onSearchChange,
   onPerPageChange,
-  onRowClick,
-  formatCurrency,
   formatDate,
   bahan,
-  setPage,
+  perPageOptions,
 }) {
-
   const [search, setSearch] = useState("")
 
   useEffect(() => {
@@ -58,24 +55,27 @@ export default function PesananTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center gap-2">
-          <Input
+      <div className="flex flex-row justify-between gap-2">
+        <Input
             placeholder="Cari ID"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="max-w-sm bg-background"
-          />
-        </div>
+            className="sm:w-64 bg-white border border-gray-300 focus-visible:ring-1 focus-visible:ring-primary"
+        />
+      </div>
+
+      {/* Table */}
       <div className="rounded-lg border bg-background">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>ID</TableHead>
               <TableHead>Tanggal</TableHead>
-              <TableHead>Tipe</TableHead>
-              <TableHead>Qty</TableHead>
-              <TableHead>Referensi ID</TableHead>
-              <TableHead>Referensi</TableHead>
+              <TableHead>Stok Sistem</TableHead>
+              <TableHead>Stok Real</TableHead>
+              <TableHead>Selisih</TableHead>
+              <TableHead>Selisih Persen</TableHead>
+              <TableHead>Asyn By</TableHead>
             </TableRow>
           </TableHeader>
 
@@ -96,84 +96,74 @@ export default function PesananTable({
               data.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell>{row.id}</TableCell>
-                  <TableCell>{formatDate(row.created_at)}</TableCell>
-                  <TableCell>
-                    <span
-                      className={
-                        row.tipe === "IN"
-                          ? "text-green-600 font-semibold"
-                          : "text-red-600 font-semibold"
-                      }
-                    >
-                      {row.tipe}
-                    </span>
-                  </TableCell>
-                  <TableCell>{formatNumber(row.qty)} {bahan.kode_satuan}</TableCell>
-                  <TableCell>{row.reference_id}</TableCell>
-                  <TableCell>{row.reference_type}</TableCell>
+                  <TableCell>{formatDate(row.synced_at)}</TableCell>
+                  <TableCell>{formatNumber(row.stok_sistem)} {bahan.kode_satuan}</TableCell>
+                  <TableCell>{formatNumber(row.stok_real)} {bahan.kode_satuan}</TableCell>
+                  <TableCell>{formatNumber(row.selisih)} {bahan.kode_satuan}</TableCell>
+                  <TableCell>{formatNumber(row.selisih_persen)}%</TableCell>
+                  <TableCell>{row.petugas_fullname}</TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </div>
-      <div className="flex flex-col sm:items-center sm:justify-between gap-4 text-sm">
-        <div className="flex items-center gap-2 justify-between w-full">
-          <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:items-center sm:justify-between gap-4 text-sm w-full">
+        <div className="flex flex-row sm:items-center justify-between gap-4 text-sm w-full">
+        <div className="flex items-center gap-2">
             <Select
-            value={String(pagination.per_page)}
-            onValueChange={(val) => onPerPageChange(Number(val))}
-          >
-            <SelectTrigger className="w-20 bg-white border border-gray-300 focus:ring-1 focus:ring-primary">
-              <SelectValue />
+            value={String(pagination.perPage)}
+            onValueChange={(val) => {
+                setPerPage(Number(val))
+                setPage(1)
+            }}
+            >
+            <SelectTrigger className="w-20 bg-white border border-gray-300">
+                <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="20">20</SelectItem>
-              <SelectItem value="30">30</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-              <SelectItem value="100">100</SelectItem>
+                {perPageOptions.map((opt) => (
+                <SelectItem key={opt} value={String(opt)}>
+                    {opt}
+                </SelectItem>
+                ))}
             </SelectContent>
-          </Select>
-          </div>
-          <div className="flex items-center gap-2 sm:ml-auto">
-            <div className="flex gap-2">
-                <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={pagination.current_page <= 1}
-                    onClick={() => onPageChange(pagination.current_page - 1)}
-                >
-                    Prev
-                </Button>
+            </Select>
+        </div>
+        <div className="flex items-center gap-4">
 
-                <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={pagination.current_page >= pagination.total_pages}
-                    onClick={() => onPageChange(pagination.current_page + 1)}
-                >
-                    Next
-                </Button>
-            </div>
-          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={pagination.current_page <= 1}
+            onClick={() => onPageChange(pagination.current_page - 1)}
+          >
+            Prev
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={pagination.current_page >= pagination.total_page}
+            onClick={() => onPageChange(pagination.current_page + 1)}
+          >
+            Next
+          </Button>
+        </div>
         </div>
         <div className="flex justify-center items-center border-t pt-2 w-full" >
             <p className="text-sm text-muted-foreground">
-              Menampilkan{" "}
+              page{" "}
               <span className="font-medium text-foreground">
-                {Math.min(
-                  pagination.current_page * pagination.per_page,
-                  pagination.total_data
-                )}
+                {pagination.page}
               </span>{" "}
               dari{" "}
               <span className="font-medium text-foreground">
-                {pagination?.total_data || 0}
+                {pagination.totalPages}
               </span>{" "}
-              data
             </p>
         </div>
+        
       </div>
     </div>
   )

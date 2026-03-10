@@ -16,11 +16,15 @@ import {
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu"
 import { MoreVertical, UserPlus, CheckCircle, XCircle  } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { useConfirm } from "@/components/providers/AlertConfirmProvider"
 
 const StokRealPage = () => {
   const [bahan, setBahan] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const { alert } = useConfirm()
+  const navigate = useNavigate()
 
   const fetchBahan = async () => {
     try {
@@ -52,55 +56,10 @@ const StokRealPage = () => {
 
      return (
     <div className="max-w-6xl mx-auto p-4">
-      <div className="mb-6 flex flex-row items-center justify-between">
+      <div className="mb-6 flex flex-row ustify-between">
         <div className="mb-4">
           <h1 className="text-2xl font-bold text-gray-900">Stok Bahan Baku</h1>
           <p className="text-gray-600 mt-1">Kelola data bahan baku</p>
-        </div>
-        <div className="flex">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="icon" className="relative" variant="outline">
-                <MoreVertical className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuItem
-                className="cursor-pointer"
-              >
-                Tambah Bahan
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                
-                  Laporan Stok
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                >
-                Filter
-                </DropdownMenuItem>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  Export
-                </DropdownMenuSubTrigger>
-
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem >
-                    Print
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem >
-                    Excel (.xlsx)
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem >
-                    Word (.docx)
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
       <Card className="rounded-2xl shadow-md">
@@ -111,7 +70,15 @@ const StokRealPage = () => {
           {loading ? (
             <Skeleton className="h-40 w-full rounded-xl" />
           ) : (
-            <StokRealForm bahan={bahan} onSuccess={fetchBahan} />
+            <StokRealForm
+              bahan={bahan}
+              onSuccess={async () => {
+                await alert("Laporan stok berhasil disimpan", {
+                  autoClose: 3000,
+                })
+                navigate(-1)
+              }}
+            />
           )}
         </CardContent>
       </Card>
